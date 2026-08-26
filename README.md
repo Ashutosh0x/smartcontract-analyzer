@@ -6,13 +6,13 @@
 <h3 align="center">Rust-Native Smart Contract Security Analyzer</h3>
 
 <p align="center">
-  <strong>30 precision-tuned detectors | Zero-config on Foundry and Hardhat | Audit printers | SARIF output</strong>
+  <strong>50 precision-tuned detectors | Zero-config on Foundry and Hardhat | Audit printers | SARIF output</strong>
 </p>
 
 <p align="center">
   <a href="#installation"><img src="https://img.shields.io/badge/Install-Guide-blue?style=flat-square" alt="Install" /></a>
   <a href="#usage"><img src="https://img.shields.io/badge/Usage-Docs-green?style=flat-square" alt="Usage" /></a>
-  <a href="#detectors"><img src="https://img.shields.io/badge/Detectors-30-orange?style=flat-square" alt="Detectors" /></a>
+  <a href="#detectors"><img src="https://img.shields.io/badge/Detectors-50-orange?style=flat-square" alt="Detectors" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License" /></a>
 </p>
 
@@ -27,7 +27,7 @@
 
 ## What Sentinel Does
 
-Sentinel is a **Rust-native** static security analyzer for Solidity smart contracts. It parses Solidity source code using [solang-parser](https://crates.io/crates/solang-parser), builds an indexed AST database (WorkspaceContext), and runs 30 precision-tuned detectors against it.
+Sentinel is a **Rust-native** static security analyzer for Solidity smart contracts. It parses Solidity source code using [solang-parser](https://crates.io/crates/solang-parser), builds an indexed AST database (WorkspaceContext), and runs 50 precision-tuned detectors against it.
 
 It runs **entirely locally** — your source code never leaves your machine.
 
@@ -201,6 +201,51 @@ jobs:
 | SHIFT-01 | Swapped Shift | Assembly shift parameter order confusion |
 | CTOR-01 | Multiple Constructors | More than one constructor |
 | ENUM-01 | Enum Cast | Integer-to-enum cast without bounds check |
+
+### Oracle / Price Feed (SC03)
+
+| ID | Name | Description |
+|----|------|-------------|
+| ORACLE-01 | Staleness Check Missing | `latestRoundData()` without `updatedAt` / `answeredInRound` check |
+| ORACLE-02 | Deprecated Chainlink | Uses deprecated `latestAnswer()` |
+| ORACLE-03 | Single Oracle | No fallback oracle / single price source |
+
+### Proxy / Upgradeability (SC10)
+
+| ID | Name | Description |
+|----|------|-------------|
+| PROXY-01 | Unprotected Initializer | `initialize` function without `initializer` modifier |
+| PROXY-02 | Missing disableInitializers | Upgradeable constructor without `_disableInitializers()` |
+| PROXY-03 | Missing UUPS Auth | `UUPSUpgradeable` without `_authorizeUpgrade` |
+| PROXY-04 | Delegatecall in Constructor | `delegatecall` inside constructor |
+| PROXY-05 | Immutable in Upgradeable | `immutable` variables in upgradeable contracts |
+
+### Token / DeFi Integration
+
+| ID | Name | Description |
+|----|------|-------------|
+| TOKEN-01 | ERC20 Approve Race | `approve()` without setting to 0 first |
+| TOKEN-02 | ERC777 Reentrancy | ERC777 hook callback reentrancy risk |
+| DEFI-01 | Missing Slippage | Swap without `amountOutMin` protection |
+| DEFI-02 | Missing Deadline | Swap without deadline parameter |
+| DEFI-03 | First Depositor Attack | ERC4626 vault without inflation protection |
+
+### Signature / Crypto
+
+| ID | Name | Description |
+|----|------|-------------|
+| CRYPTO-01 | ecrecover Null Check | `ecrecover` without `address(0)` check |
+| CRYPTO-02 | Missing Nonce | Signature verification without nonce tracking |
+
+### Modern EVM / Code Quality
+
+| ID | Name | Description |
+|----|------|-------------|
+| EVM-01 | PUSH0 Compatibility | Solidity >=0.8.20 uses PUSH0, not supported on all L2s |
+| EVM-02 | CREATE2 Reuse | `create2` + `selfdestruct` address reuse risk |
+| QUALITY-01 | Boolean Comparison | `== true` / `== false` unnecessary comparison |
+| GAS-01 | Costly Loop SLOAD | State variable read inside loop |
+| GAS-02 | Hardcoded Gas | `.call{gas: N}` breaks across hard forks |
 
 ### Known-Safe Suppression
 

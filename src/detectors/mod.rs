@@ -89,6 +89,28 @@ impl DetectorRegistry {
         self.register(Box::new(swapped_shift::SwappedShiftDetector));
         self.register(Box::new(multiple_constructors::MultipleConstructorsDetector));
         self.register(Box::new(enum_cast::EnumCastDetector));
+
+        // New Detectors
+        self.register(Box::new(oracle_staleness::OracleStalenessDetector));
+        self.register(Box::new(deprecated_chainlink::DeprecatedChainlinkDetector));
+        self.register(Box::new(single_oracle::SingleOracleDetector));
+        self.register(Box::new(unprotected_initializer::UnprotectedInitializerDetector));
+        self.register(Box::new(missing_disable_initializers::MissingDisableInitializersDetector));
+        self.register(Box::new(uups_missing_upgrade_auth::UupsMissingUpgradeAuthDetector));
+        self.register(Box::new(delegatecall_in_constructor::DelegatecallInConstructorDetector));
+        self.register(Box::new(immutable_in_upgradeable::ImmutableInUpgradeableDetector));
+        self.register(Box::new(erc20_approve_race::Erc20ApproveRaceDetector));
+        self.register(Box::new(erc777_reentrancy::Erc777ReentrancyDetector));
+        self.register(Box::new(missing_slippage::MissingSlippageDetector));
+        self.register(Box::new(missing_deadline::MissingDeadlineDetector));
+        self.register(Box::new(first_depositor::FirstDepositorDetector));
+        self.register(Box::new(ecrecover_no_check::EcrecoverNoCheckDetector));
+        self.register(Box::new(missing_nonce::MissingNonceDetector));
+        self.register(Box::new(push0_compatibility::Push0CompatibilityDetector));
+        self.register(Box::new(create2_address_reuse::Create2AddressReuseDetector));
+        self.register(Box::new(boolean_constant_comparison::BooleanConstantComparisonDetector));
+        self.register(Box::new(costly_loop_sload::CostlyLoopSloadDetector));
+        self.register(Box::new(hardcoded_gas::HardcodedGasDetector));
     }
     pub fn run_all(&self, ctx: &WorkspaceContext) -> Vec<Finding> {
         self.detectors.iter().flat_map(|d| d.detect(ctx)).collect()
@@ -130,3 +152,24 @@ pub mod assembly_return;
 pub mod swapped_shift;
 pub mod multiple_constructors;
 pub mod enum_cast;
+
+pub mod oracle_staleness;
+pub mod deprecated_chainlink;
+pub mod single_oracle;
+pub mod unprotected_initializer;
+pub mod missing_disable_initializers;
+pub mod uups_missing_upgrade_auth;
+pub mod delegatecall_in_constructor;
+pub mod immutable_in_upgradeable;
+pub mod erc20_approve_race;
+pub mod erc777_reentrancy;
+pub mod missing_slippage;
+pub mod missing_deadline;
+pub mod first_depositor;
+pub mod ecrecover_no_check;
+pub mod missing_nonce;
+pub mod push0_compatibility;
+pub mod create2_address_reuse;
+pub mod boolean_constant_comparison;
+pub mod costly_loop_sload;
+pub mod hardcoded_gas;
