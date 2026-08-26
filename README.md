@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/🛡️_Sentinel-Smart_Contract_Security-blue?style=for-the-badge&labelColor=1a1a2e" alt="Sentinel" />
+  <img src="https://img.shields.io/badge/Sentinel-Smart_Contract_Security-blue?style=for-the-badge&labelColor=1a1a2e" alt="Sentinel" />
 </p>
 
 <h1 align="center">Sentinel</h1>
 <h3 align="center">Professional-Grade Smart Contract Security Analyzer</h3>
 
 <p align="center">
-  <strong>128 vulnerability rules • 28 test fixtures • Rust-native engine • Self-maintaining CI/CD</strong>
+  <strong>128 vulnerability rules | 28 test fixtures | Rust-native engine | Self-maintaining CI/CD</strong>
 </p>
 
 <p align="center">
@@ -27,32 +27,17 @@
 
 ---
 
-## 🎯 What is Sentinel?
+## What is Sentinel?
 
 Sentinel is a **Rust-native** static security analyzer for Solidity/EVM smart contracts designed to compete with and exceed the capabilities of leading tools like Slither, Aderyn, Mythril, and Olympix.
 
 Unlike cloud-based analyzers, Sentinel runs **entirely locally** — your source code never leaves your machine.
 
-### Key Differentiators
 
-| Feature | Sentinel | Slither | Aderyn | Olympix |
-|---------|----------|---------|--------|---------|
-| **Total rules** | **128** | ~95 | ~100 | 70 |
-| Language | Rust | Python | Rust | TypeScript |
-| DeFi economic analysis | ✅ | Partial | ❌ | ❌ |
-| Flash loan detection | ✅ | ❌ | ❌ | ❌ |
-| Cross-chain / L2 | ✅ | ❌ | ❌ | ❌ |
-| Governance attacks | ✅ | ❌ | ❌ | ❌ |
-| 2025-2026 exploit patterns | ✅ | ❌ | ❌ | ❌ |
-| Compiler bug database | ✅ | ❌ | ❌ | ❌ |
-| Self-maintaining CI/CD | ✅ 12 workflows | ❌ | ❌ | ❌ |
-| Runs locally | ✅ | ✅ | ✅ | ❌ (cloud) |
-| SARIF output | ✅ | ✅ | ✅ | ✅ |
-| Open source | ✅ MIT | ✅ | ✅ | ❌ |
 
 ---
 
-## 🏗️ Tech Stack
+## Tech Stack
 
 <table>
 <tr>
@@ -83,7 +68,7 @@ Unlike cloud-based analyzers, Sentinel runs **entirely locally** — your source
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### From Source (Recommended)
 
@@ -113,7 +98,7 @@ docker run --rm -v $(pwd):/project sentinel scan /project
 
 ---
 
-## 🚀 Usage
+## Usage
 
 ### Quick Scan
 
@@ -204,52 +189,52 @@ jobs:
 
 ---
 
-## 🔍 Vulnerability Coverage (128 Rules)
+## Vulnerability Coverage (128 Rules)
 
 ### By Category
 
 | Category | Rules | Coverage |
 |----------|-------|----------|
-| 🔴 **Upgradeability / Proxy** | 11 | UUPS, Transparent, Beacon, Diamond, ERC1967, storage collisions, __gap |
-| 🔴 **Gas / Denial of Service** | 10 | Calls in loop, msg.value reuse, locked ether, unbounded arrays |
-| 🔴 **Compiler Quirks** | 10 | Assembly return vs leave, ABI encoder, enum OOR, shift params |
-| 🟠 **Access Control** | 8 | Missing auth, tx.origin, unprotected init, centralization |
-| 🟠 **Code Quality** | 8 | Unicode RTL, floating pragma, unused returns, default visibility |
-| 🟠 **DeFi Economic** | 8 | Bad debt, share inflation, donation attack, slippage |
-| 🟠 **Oracle** | 8 | Spot price, stale data, sequencer, TWAP, decimal mismatch |
-| 🟠 **Token Compliance** | 8 | Fee-on-transfer, ERC4626 inflation, rebasing, ERC777 |
-| 🟠 **Signatures** | 8 | Replay, nonce, malleability, cross-chain, EIP-712 |
-| 🟡 **Reentrancy** | 6 | Classic, cross-function, cross-contract, read-only, EIP-1153, events |
-| 🟡 **Arithmetic** | 6 | Unsafe cast, precision loss, unchecked, rounding |
-| 🟡 **Cross-Chain / L2** | 6 | Address aliasing, sequencer, DVN trust, block assumptions |
-| 🟡 **Compiler Bugs** | 5 | Known solc bugs, via-IR, ABI encoder v2 |
-| 🟡 **Flash Loan** | 5 | Price manipulation, governance, donation, callbacks |
-| 🟡 **Governance** | 5 | Flash loan voting, timelock bypass, quorum manipulation |
-| 🟡 **2026 Exploit Patterns** | 5 | EIP-1153 poisoning, EIP-7702 hijacking, Cetus overflow |
-| ⚪ **Data Initialization** | 3 | Uninitialized storage, state vars, function pointers |
-| ⚪ **Shadowing** | 3 | State variable, builtin, reserved keyword |
-| ⚪ **Arbitrary Transfer** | 2 | transferFrom drain, ERC-2771+multicall spoof |
-| ⚪ **Randomness** | 1 | block.timestamp/blockhash misuse |
-| ⚪ **Division by Zero** | 1 | Unchecked divisor |
-| ⚪ **Self-Destruct** | 1 | Unprotected selfdestruct |
+| **Upgradeability / Proxy** | 11 | UUPS, Transparent, Beacon, Diamond, ERC1967, storage collisions, __gap |
+| **Gas / Denial of Service** | 10 | Calls in loop, msg.value reuse, locked ether, unbounded arrays |
+| **Compiler Quirks** | 10 | Assembly return vs leave, ABI encoder, enum OOR, shift params |
+| **Access Control** | 8 | Missing auth, tx.origin, unprotected init, centralization |
+| **Code Quality** | 8 | Unicode RTL, floating pragma, unused returns, default visibility |
+| **DeFi Economic** | 8 | Bad debt, share inflation, donation attack, slippage |
+| **Oracle** | 8 | Spot price, stale data, sequencer, TWAP, decimal mismatch |
+| **Token Compliance** | 8 | Fee-on-transfer, ERC4626 inflation, rebasing, ERC777 |
+| **Signatures** | 8 | Replay, nonce, malleability, cross-chain, EIP-712 |
+| **Reentrancy** | 6 | Classic, cross-function, cross-contract, read-only, EIP-1153, events |
+| **Arithmetic** | 6 | Unsafe cast, precision loss, unchecked, rounding |
+| **Cross-Chain / L2** | 6 | Address aliasing, sequencer, DVN trust, block assumptions |
+| **Compiler Bugs** | 5 | Known solc bugs, via-IR, ABI encoder v2 |
+| **Flash Loan** | 5 | Price manipulation, governance, donation, callbacks |
+| **Governance** | 5 | Flash loan voting, timelock bypass, quorum manipulation |
+| **2026 Exploit Patterns** | 5 | EIP-1153 poisoning, EIP-7702 hijacking, Cetus overflow |
+| **Data Initialization** | 3 | Uninitialized storage, state vars, function pointers |
+| **Shadowing** | 3 | State variable, builtin, reserved keyword |
+| **Arbitrary Transfer** | 2 | transferFrom drain, ERC-2771+multicall spoof |
+| **Randomness** | 1 | block.timestamp/blockhash misuse |
+| **Division by Zero** | 1 | Unchecked divisor |
+| **Self-Destruct** | 1 | Unprotected selfdestruct |
 
 ### Real-World Exploit Coverage (2025-2026)
 
 | Exploit | Value | Pattern |
 |---------|-------|---------|
-| Cetus Protocol | $223M | Concentrated liquidity integer overflow |
-| KelpDAO | $292M | DVN single-point compromise |
-| Balancer | $128M | Asymmetric rounding in multi-asset pools |
+| Cetus Protocol | \$223M | Concentrated liquidity integer overflow |
+| KelpDAO | \$292M | DVN single-point compromise |
+| Balancer | \$128M | Asymmetric rounding in multi-asset pools |
 | SIR.trading | — | EIP-1153 transient storage poisoning |
 | Pectra upgrade | — | EIP-7702 delegation hijacking |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 smartcontract-analyzer/
-├── 🦀 src/                          29 Rust files — core analysis engine
+├── src/                             29 Rust files — core analysis engine
 │   ├── lib.rs                       Sentinel orchestrator & pipeline
 │   ├── main.rs                      CLI (clap) — scan/explain/diff/baseline
 │   ├── ir/                          SentinelIR — SSA, types, instructions
@@ -262,24 +247,24 @@ smartcontract-analyzer/
 │   ├── exploit/                     Exploitability scoring
 │   └── ...                          bytecode, symbolic, fuzzing, integrations
 │
-├── 📋 rules/                        22 YAML files — 128 security rules
-│   ├── solidity/                    Reentrancy, access, arithmetic, gas, quality...
+├── rules/                           22 YAML files — 128 security rules
+│   ├── solidity/                    Reentrancy, access, arithmetic, gas, quality
 │   ├── defi/                        Oracle, flash-loan, economic
 │   ├── proxy/                       Upgradeability (11 rules)
 │   └── ...                          signatures, erc, compiler, bridge, governance
 │
-├── 🧪 tests/fixtures/               28 Solidity contracts
+├── tests/fixtures/                  28 Solidity contracts
 │   ├── vulnerable/                  27 vulnerable contracts
 │   └── safe/                        1 fixed contract
 │
-├── 📚 knowledge/                    Compiler bugs, opcodes, exploits, standards
-├── 🔄 .github/workflows/            12 CI/CD workflows
-└── 📖 docs/                         Architecture, threat model, detector catalog
+├── knowledge/                       Compiler bugs, opcodes, exploits, standards
+├── .github/workflows/               12 CI/CD workflows
+└── docs/                            Architecture, threat model, detector catalog
 ```
 
 ---
 
-## 🔄 Self-Maintaining Pipeline
+## Self-Maintaining Pipeline
 
 Sentinel includes **12 GitHub Actions workflows** that keep the analyzer continuously updated:
 
@@ -298,15 +283,17 @@ Sentinel includes **12 GitHub Actions workflows** that keep the analyzer continu
 | `nightly.yml` | Nightly | Full regression + security report |
 | `dependabot.yml` | Weekly | Automated dependency PRs |
 
+### Update Flow
+
 ```
-New Vulnerability → Rule Added → Tests Pass → PR → Review → Release
-New Solidity Version → Detected → Tested → PR → Review → Release  
-Rust Advisory → Dependency Updated → Tested → PR → Review → Release
+New Vulnerability  -->  Rule Added  -->  Tests Pass  -->  PR  -->  Review  -->  Release
+New Solidity Version  -->  Detected  -->  Tested  -->  PR  -->  Review  -->  Release
+Rust Advisory  -->  Dependency Updated  -->  Tested  -->  PR  -->  Review  -->  Release
 ```
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 Create `sentinel.toml` in your project root:
 
@@ -330,7 +317,7 @@ format = "terminal"  # terminal, json, sarif, markdown
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
 
@@ -341,13 +328,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-## 🔗 Links
+## Links
 
 - [Architecture](ARCHITECTURE.md) — Full pipeline design with Mermaid diagrams
 - [Detector Catalog](docs/DETECTOR_CATALOG.md) — All 128+ detector descriptions
@@ -358,5 +345,5 @@ This project is licensed under the MIT License — see [LICENSE](LICENSE) for de
 ---
 
 <p align="center">
-  <sub>Built with 🦀 Rust • Designed for Solidity/EVM security • August 2026</sub>
+  <sub>Built with Rust | Designed for Solidity/EVM security | August 2026</sub>
 </p>
