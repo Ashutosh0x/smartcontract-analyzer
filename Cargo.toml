@@ -45,7 +45,7 @@ walkdir = "2"
 globset = "0.4"
 
 # Colored terminal output
-colored = "2"
+colored = "3"
 comfy-table = "7"
 indicatif = "0.17"
 
