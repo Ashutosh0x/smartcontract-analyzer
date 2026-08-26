@@ -1,21 +1,20 @@
 use crate::context::WorkspaceContext;
 use crate::detectors::{Detector, Finding, Severity, Confidence};
 
-pub struct UncheckedCallDetector;
+pub struct MsgValueLoopDetector;
 
-impl Detector for UncheckedCallDetector {
-    fn id(&self) -> &str { "UNCHECKED_CALL" }
-    fn title(&self) -> &str { "Unchecked Call" }
+impl Detector for MsgValueLoopDetector {
+    fn id(&self) -> &str { "MSG_VALUE_LOOP" }
+    fn title(&self) -> &str { "Msg.value in Loop" }
     fn severity(&self) -> Severity { Severity::High }
-    fn confidence(&self) -> Confidence { Confidence::High }
-    fn description(&self) -> &str { "Function body contains .call but the return value is not checked." }
+    fn confidence(&self) -> Confidence { Confidence::Medium }
+    fn description(&self) -> &str { "msg.value used inside a loop." }
 
     fn detect(&self, ctx: &WorkspaceContext) -> Vec<Finding> {
         let mut findings = Vec::new();
         
         for func in &ctx.functions {
-            if (func.body_source.contains(".call{") || func.body_source.contains(".call(")) && 
-               !(func.body_source.contains("require(success") || func.body_source.contains("if (!success") || func.body_source.contains("if(!success")) {
+            if func.has_loops && func.body_source.contains("msg.value") {
                 findings.push(Finding {
                     detector_id: self.id().to_string(),
                     title: self.title().to_string(),
@@ -27,7 +26,7 @@ impl Detector for UncheckedCallDetector {
                     contract_name: ctx.contracts.get(func.contract_idx).map(|c| c.name.clone()).unwrap_or_default(),
                     function_name: func.name.clone(),
                     snippet: func.body_source.clone(),
-                    remediation: "Check return value".to_string(),
+                    remediation: "Avoid using msg.value inside loops".to_string(),
                     cwe: None,
                     swc: None,
                 });

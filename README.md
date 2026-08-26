@@ -3,16 +3,16 @@
 </p>
 
 <h1 align="center">Sentinel</h1>
-<h3 align="center">Professional-Grade Smart Contract Security Analyzer</h3>
+<h3 align="center">Rust-Native Smart Contract Security Analyzer</h3>
 
 <p align="center">
-  <strong>128 vulnerability rules | 28 test fixtures | Rust-native engine | Self-maintaining CI/CD</strong>
+  <strong>30 precision-tuned detectors | Zero-config on Foundry and Hardhat | Audit printers | SARIF output</strong>
 </p>
 
 <p align="center">
   <a href="#installation"><img src="https://img.shields.io/badge/Install-Guide-blue?style=flat-square" alt="Install" /></a>
   <a href="#usage"><img src="https://img.shields.io/badge/Usage-Docs-green?style=flat-square" alt="Usage" /></a>
-  <a href="docs/DETECTOR_CATALOG.md"><img src="https://img.shields.io/badge/Detectors-128-orange?style=flat-square" alt="Detectors" /></a>
+  <a href="#detectors"><img src="https://img.shields.io/badge/Detectors-30-orange?style=flat-square" alt="Detectors" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License" /></a>
 </p>
 
@@ -21,19 +21,22 @@
   <img src="https://img.shields.io/badge/Solidity-363636?style=for-the-badge&logo=solidity&logoColor=white" alt="Solidity" />
   <img src="https://img.shields.io/badge/Ethereum-3C3C3D?style=for-the-badge&logo=ethereum&logoColor=white" alt="Ethereum" />
   <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white" alt="GitHub Actions" />
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/SARIF-0078D4?style=for-the-badge&logo=github&logoColor=white" alt="SARIF" />
 </p>
 
 ---
 
-## What is Sentinel?
+## What Sentinel Does
 
-Sentinel is a **Rust-native** static security analyzer for Solidity/EVM smart contracts designed to compete with and exceed the capabilities of leading tools like Slither, Aderyn, Mythril, and Olympix.
+Sentinel is a **Rust-native** static security analyzer for Solidity smart contracts. It parses Solidity source code using [solang-parser](https://crates.io/crates/solang-parser), builds an indexed AST database (WorkspaceContext), and runs 30 precision-tuned detectors against it.
 
-Unlike cloud-based analyzers, Sentinel runs **entirely locally** — your source code never leaves your machine.
+It runs **entirely locally** — your source code never leaves your machine.
 
+### Design Principles
 
+- **Precision over quantity** — 30 detectors with known-safe suppression, not 200 noisy rules
+- **Zero configuration** — auto-detects Foundry (`foundry.toml`) and Hardhat (`hardhat.config`) projects
+- **Confidence scoring** — every finding has both severity (Critical/High/Medium/Low) and confidence (High/Medium/Low)
+- **Honest scope** — Sentinel does static analysis. For symbolic execution use [Halmos](https://github.com/a16z/halmos). For fuzzing use [Foundry](https://book.getfoundry.sh/forge/fuzz-testing) or [Echidna](https://github.com/crytic/echidna).
 
 ---
 
@@ -44,143 +47,106 @@ Unlike cloud-based analyzers, Sentinel runs **entirely locally** — your source
 <td align="center"><img src="https://cdn.simpleicons.org/rust/000000" width="40"/><br/><b>Rust</b><br/><sub>Core Engine</sub></td>
 <td align="center"><img src="https://cdn.simpleicons.org/solidity/363636" width="40"/><br/><b>Solidity</b><br/><sub>Target Language</sub></td>
 <td align="center"><img src="https://cdn.simpleicons.org/ethereum/3C3C3D" width="40"/><br/><b>Ethereum</b><br/><sub>EVM Analysis</sub></td>
-<td align="center"><img src="https://cdn.simpleicons.org/githubactions/2088FF" width="40"/><br/><b>GitHub Actions</b><br/><sub>CI/CD Pipeline</sub></td>
-<td align="center"><img src="https://cdn.simpleicons.org/docker/2496ED" width="40"/><br/><b>Docker</b><br/><sub>Containerized</sub></td>
+<td align="center"><img src="https://cdn.simpleicons.org/githubactions/2088FF" width="40"/><br/><b>GitHub Actions</b><br/><sub>CI/CD</sub></td>
 </tr>
 </table>
 
-### Rust Dependencies
-
 | Crate | Purpose |
 |-------|---------|
+| `solang-parser` | Solidity AST parsing (LALRPOP-based, supports 0.8.x) |
 | `clap` | CLI argument parsing |
-| `serde` / `serde_json` | Serialization (JSON, SARIF, config) |
-| `tokio` | Async runtime |
-| `rayon` | Parallel analysis |
-| `petgraph` | CFG, call graph, inheritance graph |
-| `tracing` | Structured logging |
-| `semver` | Solidity version management |
+| `serde` / `serde_json` | JSON, SARIF, config serialization |
 | `walkdir` | Project file discovery |
-| `toml` | Configuration parsing |
-| `chrono` | Timestamps |
-| `sha2` | Content hashing |
-| `thiserror` / `anyhow` | Error handling |
+| `regex` | Pattern matching in function bodies |
+| `petgraph` | Graph structures for inheritance |
+| `colored` / `comfy-table` | Terminal output |
 
 ---
 
 ## Installation
 
-### From Source (Recommended)
+### From Source
 
 ```bash
-# Clone the repository
 git clone https://github.com/Ashutosh0x/smartcontract-analyzer.git
 cd smartcontract-analyzer
-
-# Build release binary
 cargo build --release
-
-# The binary is at target/release/sentinel
 ./target/release/sentinel --help
 ```
 
 ### Prerequisites
 
-- **Rust** 1.75+ (install via [rustup](https://rustup.rs/))
-- **solc** (optional, for compilation — install via [solc-select](https://github.com/crytic/solc-select))
-
-### Docker
-
-```bash
-docker build -t sentinel .
-docker run --rm -v $(pwd):/project sentinel scan /project
-```
+- **Rust** 1.75+ ([rustup](https://rustup.rs/))
 
 ---
 
 ## Usage
 
-### Quick Scan
+### Scan a Project
 
 ```bash
-# Scan current directory
+# Scan current directory (auto-detects Foundry/Hardhat)
 sentinel scan
 
-# Scan a specific project
-sentinel scan /path/to/solidity/project
-
-# Deep analysis (semantic + data-flow + taint)
-sentinel scan --deep
-
-# Maximum analysis (+ fuzzing hints, symbolic, exploit sim)
-sentinel scan --max-mode
-```
-
-### Output Formats
-
-```bash
-# Terminal output (default — colored, human-readable)
-sentinel scan
+# Scan a specific path
+sentinel scan /path/to/project
 
 # JSON output
 sentinel scan --json
 
 # SARIF output (for GitHub Code Scanning)
-sentinel scan --sarif -o results.sarif
+sentinel scan --sarif --output results.sarif
 
 # Markdown report
-sentinel scan --markdown -o report.md
-```
+sentinel scan --markdown
 
-### Filter by Severity
-
-```bash
-# Only critical and high findings
+# Filter by severity
 sentinel scan --severity high
-
-# Only critical findings
-sentinel scan --severity critical
 ```
 
-### Explore Detectors
+### List Detectors
 
 ```bash
-# List all available detectors
 sentinel list-detectors
-
-# Explain a specific detector
-sentinel explain REENTRANCY-001
 ```
 
-### Differential Scanning
+### Audit Printers
+
+Printers extract key structural information for manual audits:
 
 ```bash
-# Create a baseline
-sentinel baseline create
+# Inheritance graph (Mermaid diagram)
+sentinel print inheritance
 
-# Scan only new findings (ignore known issues)
-sentinel scan --baseline baseline.json
+# All external/public functions with visibility and modifiers
+sentinel print functions
 
-# Compare two revisions
-sentinel diff HEAD~1 HEAD
+# State variables with types, visibility, mutability
+sentinel print state-vars
+
+# External calls map (which functions call what)
+sentinel print external-calls
+
+# Access control map (who can call what, unrestricted functions highlighted)
+sentinel print permissions
 ```
 
 ### CI/CD Integration
 
 ```yaml
-# .github/workflows/security.yml
-name: Smart Contract Security
+name: Security Scan
 on: [push, pull_request]
-
 jobs:
   sentinel:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
       - name: Install Sentinel
-        run: cargo install --path .
-      - name: Run Security Scan
-        run: sentinel scan --sarif -o results.sarif --severity medium
+        run: cargo install --git https://github.com/Ashutosh0x/smartcontract-analyzer
+      - name: Scan
+        run: sentinel scan --sarif --output results.sarif --severity medium
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
@@ -189,161 +155,139 @@ jobs:
 
 ---
 
-## Vulnerability Coverage (128 Rules)
+## Detectors
 
-### By Category
+### Tier 1 — High Severity
 
-| Category | Rules | Coverage |
-|----------|-------|----------|
-| **Upgradeability / Proxy** | 11 | UUPS, Transparent, Beacon, Diamond, ERC1967, storage collisions, __gap |
-| **Gas / Denial of Service** | 10 | Calls in loop, msg.value reuse, locked ether, unbounded arrays |
-| **Compiler Quirks** | 10 | Assembly return vs leave, ABI encoder, enum OOR, shift params |
-| **Access Control** | 8 | Missing auth, tx.origin, unprotected init, centralization |
-| **Code Quality** | 8 | Unicode RTL, floating pragma, unused returns, default visibility |
-| **DeFi Economic** | 8 | Bad debt, share inflation, donation attack, slippage |
-| **Oracle** | 8 | Spot price, stale data, sequencer, TWAP, decimal mismatch |
-| **Token Compliance** | 8 | Fee-on-transfer, ERC4626 inflation, rebasing, ERC777 |
-| **Signatures** | 8 | Replay, nonce, malleability, cross-chain, EIP-712 |
-| **Reentrancy** | 6 | Classic, cross-function, cross-contract, read-only, EIP-1153, events |
-| **Arithmetic** | 6 | Unsafe cast, precision loss, unchecked, rounding |
-| **Cross-Chain / L2** | 6 | Address aliasing, sequencer, DVN trust, block assumptions |
-| **Compiler Bugs** | 5 | Known solc bugs, via-IR, ABI encoder v2 |
-| **Flash Loan** | 5 | Price manipulation, governance, donation, callbacks |
-| **Governance** | 5 | Flash loan voting, timelock bypass, quorum manipulation |
-| **2026 Exploit Patterns** | 5 | EIP-1153 poisoning, EIP-7702 hijacking, Cetus overflow |
-| **Data Initialization** | 3 | Uninitialized storage, state vars, function pointers |
-| **Shadowing** | 3 | State variable, builtin, reserved keyword |
-| **Arbitrary Transfer** | 2 | transferFrom drain, ERC-2771+multicall spoof |
-| **Randomness** | 1 | block.timestamp/blockhash misuse |
-| **Division by Zero** | 1 | Unchecked divisor |
-| **Self-Destruct** | 1 | Unprotected selfdestruct |
+| ID | Name | Description |
+|----|------|-------------|
+| REENT-01 | Reentrancy | State write after external call without `nonReentrant` guard |
+| UNCHECKED-01 | Unchecked Call | Low-level `.call()` without checking return value |
+| UNCHECKED-02 | Unchecked Transfer | ERC20 `.transfer()` / `.transferFrom()` without `SafeERC20` |
+| TXORIGIN-01 | tx.origin Auth | `tx.origin` used for authentication |
+| DESTRUCT-01 | Unsafe Selfdestruct | `selfdestruct` without access control |
+| DELEGATECALL-01 | Arbitrary Delegatecall | `delegatecall` to user-controlled address |
+| TRANSFER-01 | Arbitrary TransferFrom | `transferFrom` with user-supplied `from` address |
+| UNINIT-01 | Uninitialized Storage | Local storage variable not initialized |
+| SHADOW-01 | State Shadowing | State variable shadows parent contract |
+| MSGVAL-01 | msg.value in Loop | `msg.value` used inside a loop |
 
-### Real-World Exploit Coverage (2025-2026)
+### Tier 2 — Medium Severity
 
-| Exploit | Value | Pattern |
-|---------|-------|---------|
-| Cetus Protocol | \$223M | Concentrated liquidity integer overflow |
-| KelpDAO | \$292M | DVN single-point compromise |
-| Balancer | \$128M | Asymmetric rounding in multi-asset pools |
-| SIR.trading | — | EIP-1153 transient storage poisoning |
-| Pectra upgrade | — | EIP-7702 delegation hijacking |
+| ID | Name | Description |
+|----|------|-------------|
+| LOOP-01 | Calls in Loop | External calls inside loops (DoS risk) |
+| PRECISION-01 | Division Before Multiply | `a / b * c` causes precision loss |
+| ZERO-01 | Missing Zero Check | Constructor address param without zero-address check |
+| LOCKED-01 | Locked Ether | Contract accepts ETH but has no withdrawal |
+| RAND-01 | Block Randomness | `block.timestamp` / `blockhash` used as randomness |
+| BALANCE-01 | Strict Balance | `address(this).balance ==` breaks with `selfdestruct` |
+| PRAGMA-01 | Floating Pragma | Pragma with `^` or `>=` (not pinned) |
+| CAST-01 | Unsafe Downcast | Integer downcast without bounds check |
+| GAP-01 | Missing Gap | Upgradeable contract without `__gap` variable |
+| VIS-01 | Default Visibility | Function missing explicit visibility |
 
----
+### Tier 3 — Low / Informational
 
-## Project Structure
+| ID | Name | Description |
+|----|------|-------------|
+| RETURN-01 | Unused Return | Function return value not captured |
+| ENCODE-01 | Packed Encoding | `abi.encodePacked` with dynamic types (hash collision) |
+| STRUCT-01 | Struct Delete | `delete` on struct containing mapping |
+| PAYABLE-01 | Empty Payable | Empty receive/fallback traps ETH |
+| UNICODE-01 | Unicode Override | Directional override characters |
+| UNARY-01 | Unary Plus | `=+` likely typo for `+=` |
+| ASM-01 | Assembly Return | `return()` in assembly instead of `leave` |
+| SHIFT-01 | Swapped Shift | Assembly shift parameter order confusion |
+| CTOR-01 | Multiple Constructors | More than one constructor |
+| ENUM-01 | Enum Cast | Integer-to-enum cast without bounds check |
 
-```
-smartcontract-analyzer/
-├── src/                             29 Rust files — core analysis engine
-│   ├── lib.rs                       Sentinel orchestrator & pipeline
-│   ├── main.rs                      CLI (clap) — scan/explain/diff/baseline
-│   ├── ir/                          SentinelIR — SSA, types, instructions
-│   ├── compiler/                    solc integration, project detection
-│   ├── parser/                      Solidity AST parsing
-│   ├── detectors/                   Detector trait, registry, built-in detectors
-│   ├── analyses/                    CFG, data-flow, taint, call graph, storage
-│   ├── reporting/                   JSON, SARIF 2.1.0, Markdown, Terminal
-│   ├── defi/                        DeFi semantic analysis
-│   ├── exploit/                     Exploitability scoring
-│   └── ...                          bytecode, symbolic, fuzzing, integrations
-│
-├── rules/                           22 YAML files — 128 security rules
-│   ├── solidity/                    Reentrancy, access, arithmetic, gas, quality
-│   ├── defi/                        Oracle, flash-loan, economic
-│   ├── proxy/                       Upgradeability (11 rules)
-│   └── ...                          signatures, erc, compiler, bridge, governance
-│
-├── tests/fixtures/                  28 Solidity contracts
-│   ├── vulnerable/                  27 vulnerable contracts
-│   └── safe/                        1 fixed contract
-│
-├── knowledge/                       Compiler bugs, opcodes, exploits, standards
-├── .github/workflows/               12 CI/CD workflows
-└── docs/                            Architecture, threat model, detector catalog
-```
+### Known-Safe Suppression
+
+Detectors automatically suppress findings when recognized guards are present:
+
+| Guard | Suppresses |
+|-------|-----------|
+| `nonReentrant` modifier | Reentrancy findings |
+| `SafeERC20` / `safeTransfer` | Unchecked transfer findings |
+| `onlyOwner` / `require(msg.sender ==` | Selfdestruct, access control |
+| `msg.sender` check with `tx.origin` | tx.origin findings |
+| Constructor/initializer with `initializer` modifier | Uninitialized findings |
 
 ---
 
-## Self-Maintaining Pipeline
+## What Sentinel Does NOT Do
 
-Sentinel includes **12 GitHub Actions workflows** that keep the analyzer continuously updated:
+| Capability | Use Instead |
+|-----------|-------------|
+| Symbolic execution | [Halmos](https://github.com/a16z/halmos), [Kontrol](https://github.com/runtimeverification/kontrol) |
+| Fuzz testing | [Foundry fuzz](https://book.getfoundry.sh/forge/fuzz-testing), [Echidna](https://github.com/crytic/echidna), [Medusa](https://github.com/crytic/medusa) |
+| Formal verification | [Certora Prover](https://www.certora.com/), [Halmos](https://github.com/a16z/halmos) |
+| Runtime monitoring | [Forta](https://forta.org/), [OpenZeppelin Defender](https://www.openzeppelin.com/defender) |
+| Bytecode decompilation | [Dedaub](https://library.dedaub.com/), [Panoramix](https://github.com/palkeo/panoramix) |
 
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| `ci.yml` | Push/PR | Build, test, lint (multi-platform) |
-| `update-solidity.yml` | Weekly | Detect new Solidity versions |
-| `update-compiler-bugs.yml` | Daily | Sync compiler bug database |
-| `update-rules.yml` | On push to rules/ | Validate rule changes |
-| `update-dependencies.yml` | Weekly | cargo update + audit |
-| `security-audit.yml` | Daily + PR | cargo audit + cargo deny |
-| `regression.yml` | PR | Detector regression tests |
-| `benchmark.yml` | PR | Performance + precision benchmarks |
-| `fuzz.yml` | Nightly | Fuzzing with cargo-fuzz |
-| `release.yml` | Tag (v*) | Cross-platform release + Docker |
-| `nightly.yml` | Nightly | Full regression + security report |
-| `dependabot.yml` | Weekly | Automated dependency PRs |
+---
 
-### Update Flow
+## Architecture
 
 ```
-New Vulnerability  -->  Rule Added  -->  Tests Pass  -->  PR  -->  Review  -->  Release
-New Solidity Version  -->  Detected  -->  Tested  -->  PR  -->  Review  -->  Release
-Rust Advisory  -->  Dependency Updated  -->  Tested  -->  PR  -->  Review  -->  Release
+src/
+├── ast/          Solidity parsing via solang-parser
+├── context/      WorkspaceContext — indexed AST database
+├── compiler/     Project type detection (Foundry/Hardhat/Bare)
+├── ingestion/    Zero-config project discovery
+├── detectors/    30 detector implementations + registry
+├── printers/     Audit printers (inheritance, functions, permissions)
+├── reporting/    JSON, SARIF 2.1.0, Markdown, Terminal output
+├── lib.rs        Orchestrator pipeline
+└── main.rs       CLI (clap)
+```
+
+### How It Works
+
+```
+sentinel scan /path/to/project
+        │
+        ├── 1. Detect project type (Foundry/Hardhat/Bare)
+        ├── 2. Discover .sol source files
+        ├── 3. Parse each file with solang-parser → AST
+        ├── 4. Build WorkspaceContext (indexed contracts, functions, vars)
+        ├── 5. Run 30 detectors against WorkspaceContext
+        ├── 6. Filter by severity, apply suppressions
+        └── 7. Generate report (Terminal/JSON/SARIF/Markdown)
 ```
 
 ---
 
-## Configuration
+## Configuration (Optional)
 
-Create `sentinel.toml` in your project root:
+Sentinel works zero-config, but you can override with `sentinel.toml`:
 
 ```toml
 [project]
 name = "MyProtocol"
 src_paths = ["src", "contracts"]
-exclude_paths = ["test", "script", "lib"]
+exclude_paths = ["test", "script"]
 
 [analysis]
-max_depth = 10
-timeout_seconds = 300
-severity_threshold = "low"
+severity_threshold = "medium"
 
 [detectors]
-disabled = ["QUALITY-002"]  # Disable specific detectors
-
-[output]
-format = "terminal"  # terminal, json, sarif, markdown
+disabled = ["PRAGMA-01"]
 ```
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
-
-- Adding new detectors (Rust or YAML rules)
-- Adding test fixtures
-- Running the test suite
-- Submitting security findings
-
----
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-## Links
-
-- [Architecture](ARCHITECTURE.md) — Full pipeline design with Mermaid diagrams
-- [Detector Catalog](docs/DETECTOR_CATALOG.md) — All 128+ detector descriptions
-- [Threat Model](docs/THREAT_MODEL.md) — Security threat model
-- [Competitive Matrix](docs/COMPETITIVE_FEATURE_MATRIX.md) — vs Slither, Aderyn, Mythril, Olympix
-- [Security Policy](SECURITY.md) — Responsible disclosure
+MIT — see [LICENSE](LICENSE).
 
 ---
 
 <p align="center">
-  <sub>Built with Rust | Designed for Solidity/EVM security | August 2026</sub>
+  <sub>Built with Rust | Solidity/EVM security analysis | 2026</sub>
 </p>

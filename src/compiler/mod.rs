@@ -1,89 +1,31 @@
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use serde::{Deserialize, Serialize};
+use std::path::Path;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ProjectType {
     Foundry,
     Hardhat,
-    Standalone,
+    Bare,
     Unknown,
 }
 
-#[derive(Debug, Clone)]
-pub struct CompilationConfig {
-    pub solc_version: Option<semver::Version>,
-    pub via_ir: bool,
-    pub optimizer: bool,
-    pub optimizer_runs: u32,
-    pub remappings: Vec<String>,
-    pub libraries: HashMap<String, String>,
-    pub evm_version: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CompilerDiagnostic {
-    pub message: String,
-    pub severity: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct SourceInfo {
-    pub id: u32,
-    pub path: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct CompilationResult {
-    pub ast: serde_json::Value,
-    pub errors: Vec<CompilerDiagnostic>,
-    pub warnings: Vec<CompilerDiagnostic>,
-    pub sources: HashMap<String, SourceInfo>,
-}
-
-#[derive(Debug, Clone)]
-pub struct CompilerBug {
-    pub id: String,
-    pub description: String,
-}
-
-#[allow(dead_code)]
-pub struct CompilerManager {
-    solc_path: Option<PathBuf>,
-    detected_version: Option<semver::Version>,
-    project_type: ProjectType,
-}
+pub struct CompilerManager;
 
 impl CompilerManager {
-    pub fn new() -> Self {
-        Self {
-            solc_path: None,
-            detected_version: None,
-            project_type: ProjectType::Unknown,
-        }
-    }
-
-    pub fn detect_project(path: &Path) -> ProjectType {
-        if path.join("foundry.toml").exists() {
+    /// Detect the project type by looking for config files.
+    pub fn detect_project(root: &Path) -> ProjectType {
+        if root.join("foundry.toml").exists() {
             ProjectType::Foundry
-        } else if path.join("hardhat.config.js").exists() || path.join("hardhat.config.ts").exists() {
+        } else if root.join("hardhat.config.ts").exists() || root.join("hardhat.config.js").exists() {
             ProjectType::Hardhat
-        } else if path.join("src").exists() || path.join("contracts").exists() {
-            ProjectType::Standalone
         } else {
-            ProjectType::Unknown
+            // Check if there are any .sol files
+            let has_sol = walkdir::WalkDir::new(root)
+                .max_depth(5)
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .any(|e| e.path().extension().map(|ext| ext == "sol").unwrap_or(false));
+            if has_sol { ProjectType::Bare } else { ProjectType::Unknown }
         }
-    }
-
-    pub fn detect_solc_version(_source: &str) -> Option<semver::VersionReq> {
-        todo!("Parse pragma solidity")
-    }
-
-    pub fn compile(_config: &CompilationConfig, _sources: &[PathBuf]) -> Result<CompilationResult, anyhow::Error> {
-        todo!("Invoke solc and parse output")
-    }
-
-    pub fn check_known_bugs(_version: &semver::Version) -> Vec<CompilerBug> {
-        todo!("Check against known compiler bugs database")
     }
 }

@@ -1,100 +1,60 @@
-use chrono::{DateTime, Utc};
-use std::time::Duration;
-use serde::Serialize;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+use serde::{Serialize, Deserialize};
+use comfy_table::{Table, Cell, Color as ComfyColor, Attribute};
+use colored::Colorize;
+use crate::detectors::{Severity, Finding};
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReportFormat {
     Terminal,
     Json,
     Sarif,
     Markdown,
-    Html,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub enum RiskLevel {
-    Critical,
-    High,
-    Medium,
-    Low,
-    Info,
-    None,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct Finding {
-    pub id: String,
-    pub title: String,
-    pub description: String,
-    pub severity: RiskLevel,
-    pub file: String,
-    pub line: usize,
-}
-
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecurityScore {
     pub total: u32,
     pub critical_count: usize,
     pub high_count: usize,
     pub medium_count: usize,
     pub low_count: usize,
-    pub info_count: usize,
-    pub attack_surface: RiskLevel,
-    pub centralization_risk: RiskLevel,
-    pub upgrade_risk: RiskLevel,
-    pub oracle_risk: RiskLevel,
-    pub dependency_risk: RiskLevel,
-    pub compiler_risk: RiskLevel,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct ReportSummary {
-    pub files_scanned: usize,
-    pub lines_of_code: usize,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct CompilerInfo {
-    pub version: String,
-    pub framework: String,
+    pub informational_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SecurityReport {
     pub project_name: String,
-    pub scan_timestamp: DateTime<Utc>,
-    pub scan_duration: Duration,
     pub findings: Vec<Finding>,
     pub security_score: SecurityScore,
-    pub summary: ReportSummary,
-    pub compiler_info: CompilerInfo,
 }
 
 impl SecurityReport {
-    pub fn generate(&self, format: ReportFormat) -> Result<String, anyhow::Error> {
+    pub fn new(project_name: String, findings: Vec<Finding>) -> Self {
+        let security_score = Self::calculate_score(&findings);
+        Self { project_name, findings, security_score }
+    }
+
+    pub fn generate(&self, format: ReportFormat) -> String {
         match format {
             ReportFormat::Terminal => self.to_terminal(),
             ReportFormat::Json => self.to_json(),
             ReportFormat::Sarif => self.to_sarif(),
             ReportFormat::Markdown => self.to_markdown(),
-            ReportFormat::Html => todo!("HTML report generation not implemented"),
         }
     }
 
-    pub fn to_json(&self) -> Result<String, anyhow::Error> {
-        serde_json::to_string_pretty(self).map_err(Into::into)
+    pub fn to_json(&self) -> String {
+        serde_json::to_string_pretty(self).unwrap_or_default()
     }
 
-    pub fn to_sarif(&self) -> Result<String, anyhow::Error> {
+    pub fn to_sarif(&self) -> String {
         let mut results = vec![];
-
         for finding in &self.findings {
             let result = serde_json::json!({
-                "ruleId": finding.id,
-                "message": { "text": finding.title },
+                "ruleId": finding.detector_id,
+                "message": { "text": finding.title.clone() },
                 "locations": [{
                     "physicalLocation": {
-                        "artifactLocation": { "uri": finding.file },
+                        "artifactLocation": { "uri": finding.file.to_string_lossy() },
                         "region": { "startLine": finding.line }
                     }
                 }]
@@ -109,41 +69,61 @@ impl SecurityReport {
                 "tool": {
                     "driver": {
                         "name": "Sentinel",
-                        "informationUri": "https://example.com/sentinel",
                         "rules": []
                     }
                 },
                 "results": results
             }]
         });
-
-        serde_json::to_string_pretty(&sarif).map_err(Into::into)
+        serde_json::to_string_pretty(&sarif).unwrap_or_default()
     }
 
-    pub fn to_markdown(&self) -> Result<String, anyhow::Error> {
+    pub fn to_markdown(&self) -> String {
         let mut md = format!("# Security Report for {}\n\n", self.project_name);
-        md.push_str(&format!("**Scan Time:** {}\n", self.scan_timestamp));
-        md.push_str(&format!("**Duration:** {:?}\n\n", self.scan_duration));
         md.push_str(&format!("## Score: {}/100\n\n", self.security_score.total));
         
         md.push_str("## Findings\n\n");
         for finding in &self.findings {
-            md.push_str(&format!("### [{}] {}\n", finding.id, finding.title));
-            md.push_str(&format!("**Severity:** {:?}\n", finding.severity));
-            md.push_str(&format!("**File:** {}:{}\n\n", finding.file, finding.line));
+            md.push_str(&format!("### [{}] {}\n", finding.detector_id, finding.title));
+            md.push_str(&format!("**Severity:** {:?} | **Confidence:** {:?}\n", finding.severity, finding.confidence));
+            md.push_str(&format!("**Location:** `{}:{}` (Contract: {}, Function: {})\n\n", finding.file.to_string_lossy(), finding.line, finding.contract_name, finding.function_name));
             md.push_str(&format!("{}\n\n", finding.description));
+            md.push_str(&format!("**Remediation:** {}\n\n", finding.remediation));
         }
-
-        Ok(md)
+        md
     }
 
-    pub fn to_terminal(&self) -> Result<String, anyhow::Error> {
-        let mut out = format!("Report for {}\n", self.project_name);
-        out.push_str(&format!("Score: {}/100\n", self.security_score.total));
-        for finding in &self.findings {
-            out.push_str(&format!("- [{:?}] {}: {} ({}:{})\n", finding.severity, finding.id, finding.title, finding.file, finding.line));
+    pub fn to_terminal(&self) -> String {
+        let mut out = format!("{}\n", format!("Report for {}", self.project_name).bold());
+        out.push_str(&format!("Score: {}/100\n\n", self.security_score.total));
+        
+        if self.findings.is_empty() {
+            out.push_str(&"No vulnerabilities found!\n".green().to_string());
+            return out;
         }
-        Ok(out)
+
+        let mut table = Table::new();
+        table.set_header(vec!["ID", "Title", "Severity", "Location"]);
+        
+        for finding in &self.findings {
+            let sev = match finding.severity {
+                Severity::Critical => Cell::new("Critical").fg(ComfyColor::Red).add_attribute(Attribute::Bold),
+                Severity::High => Cell::new("High").fg(ComfyColor::Red),
+                Severity::Medium => Cell::new("Medium").fg(ComfyColor::Yellow),
+                Severity::Low => Cell::new("Low").fg(ComfyColor::Blue),
+                Severity::Informational => Cell::new("Info").fg(ComfyColor::DarkGrey),
+            };
+            
+            table.add_row(vec![
+                Cell::new(&finding.detector_id),
+                Cell::new(&finding.title),
+                sev,
+                Cell::new(format!("{}:{}", finding.file.to_string_lossy(), finding.line)),
+            ]);
+        }
+        out.push_str(&table.to_string());
+        out.push('\n');
+        out
     }
 
     pub fn calculate_score(findings: &[Finding]) -> SecurityScore {
@@ -151,16 +131,15 @@ impl SecurityReport {
         let mut high_count = 0;
         let mut medium_count = 0;
         let mut low_count = 0;
-        let mut info_count = 0;
+        let mut informational_count = 0;
 
         for finding in findings {
             match finding.severity {
-                RiskLevel::Critical => critical_count += 1,
-                RiskLevel::High => high_count += 1,
-                RiskLevel::Medium => medium_count += 1,
-                RiskLevel::Low => low_count += 1,
-                RiskLevel::Info => info_count += 1,
-                RiskLevel::None => {}
+                Severity::Critical => critical_count += 1,
+                Severity::High => high_count += 1,
+                Severity::Medium => medium_count += 1,
+                Severity::Low => low_count += 1,
+                Severity::Informational => informational_count += 1,
             }
         }
 
@@ -173,13 +152,7 @@ impl SecurityReport {
             high_count,
             medium_count,
             low_count,
-            info_count,
-            attack_surface: RiskLevel::None,
-            centralization_risk: RiskLevel::None,
-            upgrade_risk: RiskLevel::None,
-            oracle_risk: RiskLevel::None,
-            dependency_risk: RiskLevel::None,
-            compiler_risk: RiskLevel::None,
+            informational_count,
         }
     }
 }

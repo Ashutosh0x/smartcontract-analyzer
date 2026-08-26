@@ -1,21 +1,20 @@
 use crate::context::WorkspaceContext;
 use crate::detectors::{Detector, Finding, Severity, Confidence};
 
-pub struct UncheckedCallDetector;
+pub struct AssemblyReturnDetector;
 
-impl Detector for UncheckedCallDetector {
-    fn id(&self) -> &str { "UNCHECKED_CALL" }
-    fn title(&self) -> &str { "Unchecked Call" }
-    fn severity(&self) -> Severity { Severity::High }
+impl Detector for AssemblyReturnDetector {
+    fn id(&self) -> &str { "ASSEMBLY_RETURN" }
+    fn title(&self) -> &str { "Assembly Return" }
+    fn severity(&self) -> Severity { Severity::Low }
     fn confidence(&self) -> Confidence { Confidence::High }
-    fn description(&self) -> &str { "Function body contains .call but the return value is not checked." }
+    fn description(&self) -> &str { "Return inside assembly instead of leave." }
 
     fn detect(&self, ctx: &WorkspaceContext) -> Vec<Finding> {
         let mut findings = Vec::new();
         
         for func in &ctx.functions {
-            if (func.body_source.contains(".call{") || func.body_source.contains(".call(")) && 
-               !(func.body_source.contains("require(success") || func.body_source.contains("if (!success") || func.body_source.contains("if(!success")) {
+            if func.has_assembly && func.body_source.contains("return(") {
                 findings.push(Finding {
                     detector_id: self.id().to_string(),
                     title: self.title().to_string(),
@@ -26,8 +25,8 @@ impl Detector for UncheckedCallDetector {
                     line: func.loc.start,
                     contract_name: ctx.contracts.get(func.contract_idx).map(|c| c.name.clone()).unwrap_or_default(),
                     function_name: func.name.clone(),
-                    snippet: func.body_source.clone(),
-                    remediation: "Check return value".to_string(),
+                    snippet: "return(".to_string(),
+                    remediation: "Use 'leave' or 'return' properly".to_string(),
                     cwe: None,
                     swc: None,
                 });

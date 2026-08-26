@@ -1,21 +1,20 @@
 use crate::context::WorkspaceContext;
 use crate::detectors::{Detector, Finding, Severity, Confidence};
 
-pub struct UncheckedCallDetector;
+pub struct UninitializedStorageDetector;
 
-impl Detector for UncheckedCallDetector {
-    fn id(&self) -> &str { "UNCHECKED_CALL" }
-    fn title(&self) -> &str { "Unchecked Call" }
+impl Detector for UninitializedStorageDetector {
+    fn id(&self) -> &str { "UNINITIALIZED_STORAGE" }
+    fn title(&self) -> &str { "Uninitialized Storage" }
     fn severity(&self) -> Severity { Severity::High }
-    fn confidence(&self) -> Confidence { Confidence::High }
-    fn description(&self) -> &str { "Function body contains .call but the return value is not checked." }
+    fn confidence(&self) -> Confidence { Confidence::Low }
+    fn description(&self) -> &str { "Local variable declared as storage but not initialized." }
 
     fn detect(&self, ctx: &WorkspaceContext) -> Vec<Finding> {
         let mut findings = Vec::new();
         
         for func in &ctx.functions {
-            if (func.body_source.contains(".call{") || func.body_source.contains(".call(")) && 
-               !(func.body_source.contains("require(success") || func.body_source.contains("if (!success") || func.body_source.contains("if(!success")) {
+            if func.body_source.contains(" storage ") && !func.body_source.contains(" = ") {
                 findings.push(Finding {
                     detector_id: self.id().to_string(),
                     title: self.title().to_string(),
@@ -27,7 +26,7 @@ impl Detector for UncheckedCallDetector {
                     contract_name: ctx.contracts.get(func.contract_idx).map(|c| c.name.clone()).unwrap_or_default(),
                     function_name: func.name.clone(),
                     snippet: func.body_source.clone(),
-                    remediation: "Check return value".to_string(),
+                    remediation: "Initialize storage pointers".to_string(),
                     cwe: None,
                     swc: None,
                 });

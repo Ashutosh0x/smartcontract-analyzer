@@ -1,22 +1,26 @@
 use crate::context::WorkspaceContext;
 use crate::detectors::{Detector, Finding, Severity, Confidence};
 
-pub struct ReentrancyDetector;
+pub struct UnusedReturnDetector;
 
-impl Detector for ReentrancyDetector {
-    fn id(&self) -> &str { "REENTRANCY" }
-    fn title(&self) -> &str { "Reentrancy" }
-    fn severity(&self) -> Severity { Severity::High }
-    fn confidence(&self) -> Confidence { Confidence::High }
-    fn description(&self) -> &str { "State write after external call without nonReentrant modifier." }
+impl Detector for UnusedReturnDetector {
+    fn id(&self) -> &str { "UNUSED_RETURN" }
+    fn title(&self) -> &str { "Unused Return Value" }
+    fn severity(&self) -> Severity { Severity::Low }
+    fn confidence(&self) -> Confidence { Confidence::Low }
+    fn description(&self) -> &str { "Return value of a function is not checked." }
 
     fn detect(&self, ctx: &WorkspaceContext) -> Vec<Finding> {
         let mut findings = Vec::new();
         
         for func in &ctx.functions {
-            if !func.external_calls.is_empty() && !func.state_writes.is_empty() {
-                let has_modifier = func.modifiers.iter().any(|m| m.contains("nonReentrant") || m.contains("noReentrant"));
-                if !has_modifier {
+            let lines: Vec<&str> = func.body_source.lines().collect();
+            for line in lines {
+                if line.contains('(') && line.contains(");") && !line.contains('=') && !line.contains("require") && !line.contains("if") {
+                    // heuristic for a standalone call
+                    if line.trim().starts_with("require") || line.trim().starts_with("assert") || line.trim().starts_with("emit ") || line.trim().starts_with("revert") {
+                        continue;
+                    }
                     findings.push(Finding {
                         detector_id: self.id().to_string(),
                         title: self.title().to_string(),
@@ -27,8 +31,8 @@ impl Detector for ReentrancyDetector {
                         line: func.loc.start,
                         contract_name: ctx.contracts.get(func.contract_idx).map(|c| c.name.clone()).unwrap_or_default(),
                         function_name: func.name.clone(),
-                        snippet: func.body_source.clone(),
-                        remediation: "Use nonReentrant modifier or CEI pattern".to_string(),
+                        snippet: line.trim().to_string(),
+                        remediation: "Capture and handle the return value".to_string(),
                         cwe: None,
                         swc: None,
                     });

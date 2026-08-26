@@ -1,22 +1,22 @@
 use crate::context::WorkspaceContext;
 use crate::detectors::{Detector, Finding, Severity, Confidence};
 
-pub struct ReentrancyDetector;
+pub struct EmptyPayableDetector;
 
-impl Detector for ReentrancyDetector {
-    fn id(&self) -> &str { "REENTRANCY" }
-    fn title(&self) -> &str { "Reentrancy" }
-    fn severity(&self) -> Severity { Severity::High }
+impl Detector for EmptyPayableDetector {
+    fn id(&self) -> &str { "EMPTY_PAYABLE" }
+    fn title(&self) -> &str { "Empty Payable Function" }
+    fn severity(&self) -> Severity { Severity::Low }
     fn confidence(&self) -> Confidence { Confidence::High }
-    fn description(&self) -> &str { "State write after external call without nonReentrant modifier." }
+    fn description(&self) -> &str { "Receive or fallback is empty." }
 
     fn detect(&self, ctx: &WorkspaceContext) -> Vec<Finding> {
         let mut findings = Vec::new();
         
         for func in &ctx.functions {
-            if !func.external_calls.is_empty() && !func.state_writes.is_empty() {
-                let has_modifier = func.modifiers.iter().any(|m| m.contains("nonReentrant") || m.contains("noReentrant"));
-                if !has_modifier {
+            if (func.is_receive || func.is_fallback) && func.mutability == crate::context::Mutability::Payable {
+                let trimmed = func.body_source.replace(" ", "").replace("\n", "");
+                if trimmed == "{}" || trimmed.is_empty() {
                     findings.push(Finding {
                         detector_id: self.id().to_string(),
                         title: self.title().to_string(),
@@ -28,7 +28,7 @@ impl Detector for ReentrancyDetector {
                         contract_name: ctx.contracts.get(func.contract_idx).map(|c| c.name.clone()).unwrap_or_default(),
                         function_name: func.name.clone(),
                         snippet: func.body_source.clone(),
-                        remediation: "Use nonReentrant modifier or CEI pattern".to_string(),
+                        remediation: "Ensure intention of empty payable".to_string(),
                         cwe: None,
                         swc: None,
                     });

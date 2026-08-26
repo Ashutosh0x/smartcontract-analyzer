@@ -1,35 +1,16 @@
 use clap::{Parser, Subcommand};
-use smartcontract_analyzer::{Sentinel, SentinelConfig, PipelineStage};
+use smartcontract_analyzer::{Sentinel, SentinelConfig};
 use smartcontract_analyzer::reporting::ReportFormat;
-use smartcontract_analyzer::detectors::Severity;
-use std::path::PathBuf;
+use smartcontract_analyzer::detectors::{DetectorRegistry, Severity};
+use smartcontract_analyzer::printers;
+use std::path::Path;
 
 #[derive(Parser, Debug)]
 #[command(name = "sentinel")]
-#[command(version, about = "Sentinel: Professional-grade smart contract security analyzer")]
+#[command(version, about = "Sentinel: Rust-native smart contract security analyzer")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
-
-    /// Path to config file
-    #[arg(global = true, long, default_value = "sentinel.toml")]
-    config: String,
-
-    /// Enable verbose output
-    #[arg(global = true, short, long)]
-    verbose: bool,
-
-    /// Suppress non-essential output
-    #[arg(global = true, short, long)]
-    quiet: bool,
-
-    /// Disable colored output
-    #[arg(global = true, long)]
-    no_color: bool,
-
-    /// Number of analysis threads (0 = auto)
-    #[arg(global = true, long, default_value = "0")]
-    threads: usize,
 }
 
 #[derive(Subcommand, Debug)]
@@ -40,80 +21,40 @@ enum Commands {
         #[arg(default_value = ".")]
         path: String,
 
-        /// Enable deep analysis (semantic + data-flow + taint)
+        /// Output JSON format
         #[arg(long)]
-        deep: bool,
-
-        /// Enable maximum analysis (+ fuzzing hints, symbolic, exploit sim)
-        #[arg(long, name = "max")]
-        max_mode: bool,
-
-        /// Minimum severity to report
-        #[arg(long, default_value = "low")]
-        severity: String,
+        json: bool,
 
         /// Output SARIF format
         #[arg(long)]
         sarif: bool,
 
-        /// Output JSON format
-        #[arg(long)]
-        json: bool,
-
         /// Output Markdown format
         #[arg(long)]
         markdown: bool,
 
-        /// Output HTML format
-        #[arg(long)]
-        html: bool,
+        /// Minimum severity to report (critical, high, medium, low, informational)
+        #[arg(long, default_value = "low")]
+        severity: String,
 
-        /// Analyze bytecode instead of source
-        #[arg(long)]
-        bytecode: bool,
-
-        /// Only scan changed files
-        #[arg(long)]
-        changed: bool,
-
-        /// Use baseline for differential scanning
-        #[arg(long)]
-        baseline: Option<String>,
-    },
-
-    /// Explain a specific detector
-    Explain {
-        /// Detector ID (e.g., REENTRANCY-001)
-        detector_id: String,
-    },
-
-    /// Compare findings between two revisions
-    Diff {
-        /// Start revision
-        from: String,
-        /// End revision
-        to: String,
-    },
-
-    /// Manage analysis baselines
-    Baseline {
-        #[command(subcommand)]
-        command: BaselineCommands,
+        /// Output file
+        #[arg(long, short)]
+        output: Option<String>,
     },
 
     /// List all available detectors
     ListDetectors,
 
-    /// Update security rules and knowledge base
-    UpdateRules,
-}
+    /// Print project structures for auditing
+    Print {
+        /// Type: inheritance, functions, state-vars, external-calls, permissions
+        #[arg(value_name = "TYPE")]
+        print_type: String,
 
-#[derive(Subcommand, Debug)]
-enum BaselineCommands {
-    /// Create a new baseline from current scan
-    Create,
-    /// Check against existing baseline
-    Check,
+        /// Path to project
+        #[arg(default_value = ".")]
+        path: String,
+    },
 }
 
 fn parse_severity(s: &str) -> Severity {
@@ -122,139 +63,86 @@ fn parse_severity(s: &str) -> Severity {
         "high" => Severity::High,
         "medium" => Severity::Medium,
         "low" => Severity::Low,
-        _ => Severity::Informational,
+        "informational" | "info" => Severity::Informational,
+        _ => Severity::Low,
     }
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+
     let cli = Cli::parse();
 
-    // Initialize tracing
-    if cli.verbose {
-        tracing_subscriber::fmt()
-            .with_env_filter("sentinel=debug")
-            .init();
-    } else if !cli.quiet {
-        tracing_subscriber::fmt()
-            .with_env_filter("sentinel=info")
-            .init();
-    }
-
     match &cli.command {
-        Commands::Scan {
-            path,
-            deep,
-            max_mode,
-            severity,
-            sarif,
-            json,
-            markdown,
-            bytecode: _,
-            changed: _,
-            baseline: _,
-            html: _,
-        } => {
-            let stage = if *max_mode {
-                PipelineStage::Max
-            } else if *deep {
-                PipelineStage::Deep
-            } else {
-                PipelineStage::Fast
-            };
-
+        Commands::Scan { path, json, sarif, markdown, severity, output } => {
             let config = SentinelConfig {
                 severity_threshold: parse_severity(severity),
                 ..SentinelConfig::default()
             };
 
-            let sentinel = Sentinel::new(config, stage);
-            let target = PathBuf::from(path);
+            let sentinel = Sentinel::new(config);
+            let target = Path::new(path);
 
-            eprintln!("🔍 Sentinel — Smart Contract Security Analyzer");
-            eprintln!("   Scanning: {}", path);
-            eprintln!("   Mode: {:?}", stage);
-            eprintln!();
+            let findings = sentinel.analyze(target)?;
 
-            let findings = sentinel.analyze(&target)?;
-
-            // Determine output format
-            let format = if *sarif {
-                ReportFormat::Sarif
-            } else if *json {
+            let format = if *json {
                 ReportFormat::Json
+            } else if *sarif {
+                ReportFormat::Sarif
             } else if *markdown {
                 ReportFormat::Markdown
             } else {
                 ReportFormat::Terminal
             };
 
-            let output = sentinel.report(&findings, path, format)?;
-            println!("{output}");
+            let report_str = sentinel.report(&findings, path, format)?;
 
-            // Exit with non-zero if critical/high findings
-            let has_critical = findings.iter().any(|f| {
-                matches!(f.severity, Severity::Critical | Severity::High)
-            });
-            if has_critical {
-                std::process::exit(1);
-            }
-        }
-
-        Commands::Explain { detector_id } => {
-            let mut registry = smartcontract_analyzer::detectors::DetectorRegistry::new();
-            registry.register_defaults();
-
-            if let Some(detector) = registry.get_detector(detector_id) {
-                let meta = detector.metadata();
-                println!("Detector: {}", meta.id);
-                println!("Name: {}", meta.name);
-                println!("Category: {:?}", meta.category);
-                println!("Severity: {:?}", meta.severity);
-                println!("Confidence: {:?}", meta.confidence);
-                println!("Description: {}", meta.description);
-                if !meta.cwe.is_empty() {
-                    println!("CWE: {}", meta.cwe.join(", "));
-                }
-                if !meta.swc.is_empty() {
-                    println!("SWC: {}", meta.swc.join(", "));
-                }
+            if let Some(out_path) = output {
+                std::fs::write(out_path, &report_str)?;
+                eprintln!("Report written to {}", out_path);
             } else {
-                eprintln!("Unknown detector: {detector_id}");
-                eprintln!("Use 'sentinel list-detectors' to see available detectors.");
-                std::process::exit(1);
+                println!("{}", report_str);
             }
         }
-
         Commands::ListDetectors => {
-            let mut registry = smartcontract_analyzer::detectors::DetectorRegistry::new();
+            let mut registry = DetectorRegistry::new();
             registry.register_defaults();
 
-            println!("{:<20} {:<40} {:<10} {:<10}", "ID", "NAME", "SEVERITY", "CATEGORY");
-            println!("{}", "-".repeat(80));
-            for meta in registry.list_detectors() {
-                println!(
-                    "{:<20} {:<40} {:<10} {:?}",
-                    meta.id, meta.name, format!("{:?}", meta.severity), meta.category
-                );
+            println!("{:<20} {:<45} {:<12} {:<10}", "ID", "TITLE", "SEVERITY", "CONFIDENCE");
+            println!("{}", "-".repeat(87));
+            for info in registry.list() {
+                println!("{:<20} {:<45} {:<12?} {:<10?}", info.0, info.1, info.2, info.3);
             }
         }
+        Commands::Print { print_type, path } => {
+            let target = Path::new(path);
 
-        Commands::Diff { from, to } => {
-            eprintln!("Comparing {from} → {to} (not yet implemented)");
-        }
-
-        Commands::Baseline { command } => match command {
-            BaselineCommands::Create => {
-                eprintln!("Creating baseline... (not yet implemented)");
+            // Parse the project to build context
+            let project = smartcontract_analyzer::ingestion::ProjectDiscoverer::discover(target)?;
+            let mut parsed_sources = Vec::new();
+            for source_path in &project.source_files {
+                if let Ok(source) = std::fs::read_to_string(source_path) {
+                    if let Ok(parsed) = smartcontract_analyzer::ast::parse_solidity(&source, source_path) {
+                        parsed_sources.push(parsed);
+                    }
+                }
             }
-            BaselineCommands::Check => {
-                eprintln!("Checking against baseline... (not yet implemented)");
-            }
-        },
+            let ctx = smartcontract_analyzer::context::WorkspaceContext::from_parsed_sources(&parsed_sources);
 
-        Commands::UpdateRules => {
-            eprintln!("Updating security rules... (not yet implemented)");
+            let output_str = match print_type.as_str() {
+                "inheritance" => printers::print_inheritance(&ctx),
+                "functions" => printers::print_functions(&ctx),
+                "state-vars" => printers::print_state_variables(&ctx),
+                "external-calls" => printers::print_external_calls(&ctx),
+                "permissions" => printers::print_permissions(&ctx),
+                _ => {
+                    eprintln!("Unknown print type: {}. Use: inheritance, functions, state-vars, external-calls, permissions", print_type);
+                    std::process::exit(1);
+                }
+            };
+            println!("{}", output_str);
         }
     }
 

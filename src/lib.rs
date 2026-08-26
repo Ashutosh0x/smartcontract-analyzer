@@ -1,26 +1,22 @@
-//! # Sentinel — Professional-Grade Smart Contract Security Analyzer
+//! # Sentinel — Rust-Native Smart Contract Security Analyzer
 //!
-//! A Rust-based security analysis platform for Solidity/EVM smart contracts.
-//! Combines semantic analysis, DeFi awareness, exploitability scoring,
-//! and evidence-based findings.
+//! Static analysis for Solidity/EVM smart contracts.
+//! Uses `solang-parser` for Solidity parsing and `solc --standard-json`
+//! for fully-resolved AST with type info.
+//!
+//! ## Architecture
+//! ```text
+//! SOURCE → Project Discovery → solc Compilation → AST Parsing
+//! → WorkspaceContext → Detectors → Findings → Report
+//! ```
 
-pub mod analyses;
-pub mod bytecode;
-pub mod cli;
+pub mod ast;
 pub mod compiler;
-pub mod defi;
-pub mod dependencies;
+pub mod context;
 pub mod detectors;
-pub mod exploit;
-pub mod fuzzing;
 pub mod ingestion;
-pub mod integrations;
-pub mod ir;
-pub mod knowledge;
-pub mod parser;
+pub mod printers;
 pub mod reporting;
-pub mod semantic;
-pub mod symbolic;
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -43,25 +39,12 @@ impl Default for SentinelConfig {
         Self {
             max_depth: 10,
             timeout_seconds: 300,
-            src_paths: vec![PathBuf::from("src")],
-            exclude_paths: vec![PathBuf::from("test"), PathBuf::from("script")],
+            src_paths: vec![PathBuf::from("src"), PathBuf::from("contracts")],
+            exclude_paths: vec![PathBuf::from("test"), PathBuf::from("script"), PathBuf::from("node_modules")],
             severity_threshold: detectors::Severity::Low,
             disabled_detectors: Vec::new(),
         }
     }
-}
-
-// ── Pipeline ───────────────────────────────────────────────────────────
-
-/// Analysis depth / mode.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum PipelineStage {
-    /// Static analysis only — fastest.
-    Fast,
-    /// Semantic + data-flow + taint analysis.
-    Deep,
-    /// Everything: fuzzing hints, symbolic, exploit simulation.
-    Max,
 }
 
 // ── Errors ─────────────────────────────────────────────────────────────
@@ -84,56 +67,70 @@ pub enum SentinelError {
 
 // ── Orchestrator ───────────────────────────────────────────────────────
 
-/// Top-level orchestrator that drives the entire analysis pipeline.
+/// Top-level orchestrator that drives the analysis pipeline.
 ///
 /// Pipeline:
-/// ```text
-/// SOURCE → Project Discovery → Dependency Resolution → Compiler Detection
-/// → Solidity AST → IR → SSA → CFG → Call Graph → Storage Model
-/// → Data Flow → Taint Analysis → Semantic Analysis → Security Detectors
-/// → DeFi/Economic Analysis → Cross-Contract Analysis
-/// → Exploitability Analysis → Finding Correlation → Risk Scoring
-/// → Report Generation
-/// ```
+/// 1. Discover project type (Foundry, Hardhat, bare Solidity)
+/// 2. Find all .sol source files
+/// 3. Parse each file with solang-parser to get AST
+/// 4. Build WorkspaceContext (indexed AST nodes)
+/// 5. Run all enabled detectors against the context
+/// 6. Filter, deduplicate, and score findings
+/// 7. Generate report
 pub struct Sentinel {
     pub config: SentinelConfig,
-    pub stage: PipelineStage,
 }
 
 impl Sentinel {
-    pub fn new(config: SentinelConfig, stage: PipelineStage) -> Self {
-        Self { config, stage }
+    pub fn new(config: SentinelConfig) -> Self {
+        Self { config }
     }
 
-    pub fn default_fast() -> Self {
-        Self::new(SentinelConfig::default(), PipelineStage::Fast)
-    }
-
-    /// Run the full analysis pipeline on the given target path.
+    /// Run the analysis pipeline on the given target path.
     pub fn analyze(&self, target: &Path) -> Result<Vec<detectors::Finding>, SentinelError> {
-        tracing::info!("Starting Sentinel analysis on {:?} (mode: {:?})", target, self.stage);
+        tracing::info!("Starting Sentinel analysis on {:?}", target);
 
-        // Phase 1: Project discovery & compilation
-        let project_type = compiler::CompilerManager::detect_project(target);
-        tracing::info!("Detected project type: {:?}", project_type);
+        // Phase 1: Discover project and find Solidity files
+        let project = ingestion::ProjectDiscoverer::discover(target)
+            .map_err(|e| SentinelError::Analysis(format!("{:?}", e)))?;
+        tracing::info!("Detected project: {:?}, {} source files", project.project_type, project.source_files.len());
 
-        // Phase 2: Run detectors (on the analysis context built from compilation)
+        // Phase 2: Parse all Solidity files into ASTs
+        let mut parsed_sources = Vec::new();
+        for source_path in &project.source_files {
+            match std::fs::read_to_string(source_path) {
+                Ok(source) => {
+                    match ast::parse_solidity(&source, source_path) {
+                        Ok(parsed) => parsed_sources.push(parsed),
+                        Err(e) => {
+                            tracing::warn!("Parse error in {:?}: {}", source_path, e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("Could not read {:?}: {}", source_path, e);
+                }
+            }
+        }
+        tracing::info!("Successfully parsed {} / {} files", parsed_sources.len(), project.source_files.len());
+
+        // Phase 3: Build workspace context (indexed AST data)
+        let ctx = context::WorkspaceContext::from_parsed_sources(&parsed_sources);
+        tracing::info!(
+            "WorkspaceContext: {} contracts, {} functions, {} state variables",
+            ctx.contracts.len(),
+            ctx.functions.len(),
+            ctx.state_variables.len(),
+        );
+
+        // Phase 4: Run detectors
         let mut registry = detectors::DetectorRegistry::new();
         registry.register_defaults();
 
-        // Build a minimal analysis context
-        let context = detectors::AnalysisContext {
-            compilation_unit: String::new(),
-            cfg_results: std::collections::HashMap::new(),
-            call_graph: detectors::CallGraphData {},
-            taint_results: std::collections::HashMap::new(),
-            storage_layout: std::collections::HashMap::new(),
-        };
-
-        let findings = registry.run_all(&context);
+        let findings = registry.run_all(&ctx);
         tracing::info!("Found {} raw findings", findings.len());
 
-        // Phase 3: Filter by severity & disabled detectors
+        // Phase 5: Filter by severity & disabled detectors, apply suppressions
         let findings: Vec<_> = findings
             .into_iter()
             .filter(|f| f.severity >= self.config.severity_threshold)
@@ -150,66 +147,16 @@ impl Sentinel {
         project_name: &str,
         format: reporting::ReportFormat,
     ) -> Result<String, SentinelError> {
-        let score = reporting::SecurityReport::calculate_score(
-            &findings.iter().map(|f| reporting::Finding {
-                id: f.id.clone(),
-                title: f.title.clone(),
-                description: f.description.clone(),
-                severity: match f.severity {
-                    detectors::Severity::Critical => reporting::RiskLevel::Critical,
-                    detectors::Severity::High => reporting::RiskLevel::High,
-                    detectors::Severity::Medium => reporting::RiskLevel::Medium,
-                    detectors::Severity::Low => reporting::RiskLevel::Low,
-                    detectors::Severity::Informational => reporting::RiskLevel::Info,
-                },
-                file: f.source_locations.first()
-                    .map(|l| l.file.clone())
-                    .unwrap_or_default(),
-                line: f.source_locations.first()
-                    .map(|l| l.line)
-                    .unwrap_or(0),
-            }).collect::<Vec<_>>(),
+        let report = reporting::SecurityReport::new(
+            project_name.to_string(),
+            findings.to_vec(),
         );
-
-        let report = reporting::SecurityReport {
-            project_name: project_name.to_string(),
-            scan_timestamp: chrono::Utc::now(),
-            scan_duration: std::time::Duration::from_secs(0),
-            findings: findings.iter().map(|f| reporting::Finding {
-                id: f.id.clone(),
-                title: f.title.clone(),
-                description: f.description.clone(),
-                severity: match f.severity {
-                    detectors::Severity::Critical => reporting::RiskLevel::Critical,
-                    detectors::Severity::High => reporting::RiskLevel::High,
-                    detectors::Severity::Medium => reporting::RiskLevel::Medium,
-                    detectors::Severity::Low => reporting::RiskLevel::Low,
-                    detectors::Severity::Informational => reporting::RiskLevel::Info,
-                },
-                file: f.source_locations.first()
-                    .map(|l| l.file.clone())
-                    .unwrap_or_default(),
-                line: f.source_locations.first()
-                    .map(|l| l.line)
-                    .unwrap_or(0),
-            }).collect(),
-            security_score: score,
-            summary: reporting::ReportSummary {
-                files_scanned: 0,
-                lines_of_code: 0,
-            },
-            compiler_info: reporting::CompilerInfo {
-                version: String::new(),
-                framework: String::new(),
-            },
-        };
-
-        report.generate(format).map_err(|e| SentinelError::Analysis(e.to_string()))
+        Ok(report.generate(format))
     }
 }
 
 impl Default for Sentinel {
     fn default() -> Self {
-        Self::default_fast()
+        Self::new(SentinelConfig::default())
     }
 }
