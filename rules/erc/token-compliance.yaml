@@ -1,0 +1,163 @@
+rules:
+  - id: TOKEN-001
+    name: Unsafe ERC20 Transfer (Missing Return Check)
+    category: erc
+    severity: HIGH
+    confidence: HIGH
+    description: "ERC20 transfer/transferFrom return values are ignored. Some tokens fail silently."
+    conditions:
+      - unchecked_transfer
+    signals:
+      - ".transfer("
+      - ".transferFrom("
+    anti_patterns:
+      - "SafeERC20"
+      - "require(token.transfer"
+    evidence:
+      - show_unchecked_call
+    remediation:
+      - "Use SafeERC20's safeTransfer and safeTransferFrom"
+    cwe: ["CWE-252"]
+    swc: ["SWC-104"]
+    references: []
+
+  - id: TOKEN-002
+    name: Fee-on-Transfer Token Incompatibility
+    category: erc
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Protocol assumes received amount equals transferred amount, failing for fee-on-transfer tokens."
+    conditions:
+      - exact_amount_assumption
+    signals:
+      - "balance += amount"
+    anti_patterns:
+      - "balanceBefore = balanceOf(this)"
+    evidence:
+      - show_accounting_logic
+    remediation:
+      - "Measure balance before and after transfer to determine actual amount received"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: TOKEN-003
+    name: Rebasing Token Accounting Error
+    category: erc
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Protocol caches balances that can become stale if the token rebases."
+    conditions:
+      - cached_balances
+    signals:
+      - "balances[msg.sender] += amount"
+    anti_patterns:
+      - "shares"
+    evidence:
+      - show_static_accounting
+    remediation:
+      - "Use a share-based accounting system for rebasing tokens"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: TOKEN-004
+    name: ERC777 Callback Reentrancy
+    category: erc
+    severity: HIGH
+    confidence: HIGH
+    description: "Tokens with hooks (ERC777, ERC721) allow reentrancy during transfers."
+    conditions:
+      - token_transfer_reentrancy
+    signals:
+      - "transferFrom("
+    anti_patterns:
+      - "nonReentrant"
+    evidence:
+      - show_transfer_location
+    remediation:
+      - "Add reentrancy guards to functions interacting with arbitrary tokens"
+    cwe: ["CWE-841"]
+    swc: ["SWC-107"]
+    references: []
+
+  - id: TOKEN-005
+    name: ERC4626 Inflation Attack
+    category: erc
+    severity: HIGH
+    confidence: HIGH
+    description: "First depositor can inflate share price to steal subsequent deposits via rounding down."
+    conditions:
+      - vault_inflation
+    signals:
+      - "convertToShares("
+    anti_patterns:
+      - "_mint(dead, 1000)"
+      - "virtual assets"
+    evidence:
+      - show_share_calculation
+    remediation:
+      - "Implement virtual assets/shares offset (OpenZeppelin 4.9+)"
+    cwe: ["CWE-1339"]
+    swc: []
+    references: []
+
+  - id: TOKEN-006
+    name: Missing ERC20 Approve Race Condition Mitigation
+    category: erc
+    severity: LOW
+    confidence: HIGH
+    description: "Standard approve is susceptible to front-running."
+    conditions:
+      - standard_approve
+    signals:
+      - "approve("
+    anti_patterns:
+      - "safeIncreaseAllowance"
+    evidence:
+      - show_approve
+    remediation:
+      - "Use SafeERC20 safeIncreaseAllowance/safeDecreaseAllowance, or approve to 0 first"
+    cwe: ["CWE-362"]
+    swc: ["SWC-114"]
+    references: []
+
+  - id: TOKEN-007
+    name: Non-Standard Decimal Handling
+    category: erc
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Protocol assumes all tokens have 18 decimals."
+    conditions:
+      - hardcoded_decimals
+    signals:
+      - "1e18"
+    anti_patterns:
+      - "token.decimals()"
+    evidence:
+      - show_hardcoded_1e18
+    remediation:
+      - "Dynamically query token decimals or normalize inputs"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: TOKEN-008
+    name: ERC721 Safe Transfer Callback Risk
+    category: erc
+    severity: HIGH
+    confidence: HIGH
+    description: "safeTransferFrom triggers onERC721Received, allowing reentrancy."
+    conditions:
+      - safe_transfer_reentrancy
+    signals:
+      - "safeTransferFrom("
+    anti_patterns:
+      - "nonReentrant"
+    evidence:
+      - show_safetransfer_call
+    remediation:
+      - "Use reentrancy guards or CEI pattern before safeTransferFrom"
+    cwe: ["CWE-841"]
+    swc: ["SWC-107"]
+    references: []

@@ -1,0 +1,187 @@
+rules:
+  - id: QUIRK-001
+    name: Assembly Return Instead of Leave
+    category: compiler-quirks
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Using 'return' inside inline assembly inside a Solidity function. This returns from the entire EVM call, not just the assembly block. Use 'leave' to exit only the assembly block."
+    conditions: []
+    signals:
+      - "assembly {"
+      - "return("
+    anti_patterns:
+      - "leave"
+    evidence:
+      - show_assembly_return
+    remediation:
+      - "Use 'leave' instead of 'return'"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUIRK-002
+    name: ABI Encoder Array Issue
+    category: compiler-quirks
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Nested arrays or arrays of structs with dynamic types passed to abi.encode() can produce incorrect encoding with ABI encoder v1."
+    conditions:
+      - abi_encode_call
+      - nested_dynamic_array_argument
+    signals:
+      - "abi.encode("
+    anti_patterns: []
+    evidence:
+      - show_abi_encode
+    remediation:
+      - "Use ABI encoder v2"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUIRK-003
+    name: Enum Conversion Out of Range
+    category: compiler-quirks
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Casting an integer to an enum type without bounds checking. If the integer exceeds the enum's max value, Solidity reverts (>=0.8.0) or silently wraps (<0.8.0)."
+    conditions:
+      - explicit_enum_cast
+      - no_bounds_check
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_enum_cast
+    remediation:
+      - "Validate integer bounds before cast"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUIRK-004
+    name: Signed Integer Array
+    category: compiler-quirks
+    severity: LOW
+    confidence: HIGH
+    description: "Arrays of signed integers have known edge cases in older Solidity versions related to ABI encoding."
+    conditions: []
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_signed_array
+    remediation:
+      - "Update compiler version or use uint array if applicable"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUIRK-005
+    name: Struct With Mapping Deletion
+    category: compiler-quirks
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Using 'delete' on a struct that contains a mapping. The mapping inside the struct is NOT deleted — it persists in storage, which may lead to stale or incorrect data."
+    conditions:
+      - delete_on_struct
+      - struct_contains_mapping
+    signals:
+      - "delete "
+      - "mapping("
+    anti_patterns: []
+    evidence:
+      - show_delete_struct
+    remediation:
+      - "Do not expect mapping inside struct to be deleted"
+    cwe: ["CWE-459"]
+    swc: []
+    references: []
+
+  - id: QUIRK-006
+    name: Swapped Shift Parameters
+    category: compiler-quirks
+    severity: HIGH
+    confidence: MEDIUM
+    description: "In Yul/assembly, shl(shift, value) and shr(shift, value) have the shift amount as the FIRST argument, opposite to most languages. Easy to confuse the order."
+    conditions: []
+    signals:
+      - "shl("
+      - "shr("
+      - "sar("
+    anti_patterns: []
+    evidence:
+      - show_shift
+    remediation:
+      - "Check shift argument order"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUIRK-007
+    name: Array Length Assignment
+    category: compiler-quirks
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Direct assignment to array.length was allowed in Solidity <0.6.0 and could resize storage arrays. This is now disallowed but legacy code may still contain it."
+    conditions: []
+    signals:
+      - ".length ="
+    anti_patterns: []
+    evidence:
+      - show_length_assignment
+    remediation:
+      - "Use .push() or .pop()"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUIRK-008
+    name: Nested Struct In Mapping
+    category: compiler-quirks
+    severity: LOW
+    confidence: MEDIUM
+    description: "ABI encoder v1 has issues encoding nested structs retrieved from mappings. Use ABI encoder v2 or flatten the struct."
+    conditions: []
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_nested_struct
+    remediation:
+      - "Use ABI encoder v2"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUIRK-009
+    name: Downcast of Number to Address
+    category: compiler-quirks
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Downcasting a uint256 to an address type. The upper bits are silently truncated, which may produce an unintended address."
+    conditions: []
+    signals:
+      - "address(uint160("
+    anti_patterns: []
+    evidence:
+      - show_downcast
+    remediation:
+      - "Ensure number fits in 160 bits before casting"
+    cwe: ["CWE-704"]
+    swc: []
+    references: []
+
+  - id: QUIRK-010
+    name: Multiple Constructors
+    category: compiler-quirks
+    severity: HIGH
+    confidence: HIGH
+    description: "Contract defines both the old-style constructor (function with same name as contract) and the new-style constructor() keyword. In Solidity <0.5.0, only one is used — the other is ignored."
+    conditions: []
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_multiple_constructors
+    remediation:
+      - "Keep only one constructor"
+    cwe: []
+    swc: ["SWC-118"]
+    references: []

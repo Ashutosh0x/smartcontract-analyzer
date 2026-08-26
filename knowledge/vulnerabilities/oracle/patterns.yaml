@@ -1,0 +1,29 @@
+patterns:
+  - id: ORACLE-001
+    name: "Spot Price Manipulation"
+    description: "Using AMM spot price (e.g., Uniswap V2 reserve ratio) which is easily manipulatable via flash loans."
+    code_snippet: |
+      uint256 price = reserve1 / reserve0;
+    detection_signals:
+      - "Direct calculation of price using getReserves()"
+      - "Lack of TWAP or external oracle"
+    remediation: "Use decentralized oracles like Chainlink or Uniswap V3 TWAP."
+
+  - id: ORACLE-002
+    name: "Stale Oracle Data"
+    description: "Not validating the timestamp or round completeness of oracle data."
+    code_snippet: |
+      (, int256 price, , , ) = priceFeed.latestRoundData();
+    detection_signals:
+      - "Missing checks for updatedAt timestamp."
+      - "Missing check for price > 0."
+    remediation: "Validate round ID, updatedAt timestamp, and ensure price is positive."
+
+  - id: ORACLE-003
+    name: "Decimal Mismatch"
+    description: "Incorrectly scaling oracle prices with token decimals."
+    code_snippet: |
+      uint256 value = amount * price; // Missing decimal normalization
+    detection_signals:
+      - "Multiplication/division involving oracle price without decimal adjustment."
+    remediation: "Normalize decimals before arithmetic operations."

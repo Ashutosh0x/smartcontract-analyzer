@@ -1,0 +1,105 @@
+rules:
+  - id: FLASH-001
+    name: Flash Loan Price Manipulation
+    category: flash-loan
+    severity: CRITICAL
+    confidence: HIGH
+    description: "Protocol relies on spot balances/prices that can be manipulated via flash loans."
+    conditions:
+      - spot_price_usage
+      - flash_loan_callback
+    signals:
+      - "balanceOf("
+      - "getReserves()"
+    anti_patterns:
+      - "TWAP"
+    evidence:
+      - show_spot_price_dependency
+    remediation:
+      - "Use manipulation-resistant oracles like Chainlink or TWAPs"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []
+
+  - id: FLASH-002
+    name: Flash Loan Governance Attack
+    category: flash-loan
+    severity: HIGH
+    confidence: HIGH
+    description: "Voting power is determined by spot balance, allowing flash loan voters to pass proposals."
+    conditions:
+      - spot_balance_voting
+    signals:
+      - "balanceOf(msg.sender)"
+    anti_patterns:
+      - "getPriorVotes"
+      - "getPastVotes"
+    evidence:
+      - show_voting_logic
+    remediation:
+      - "Use checkpoints and past balances for voting power"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: FLASH-003
+    name: Flash Loan Collateral Drain
+    category: flash-loan
+    severity: CRITICAL
+    confidence: MEDIUM
+    description: "Attacker uses flash loans to artificially inflate collateral value and borrow unbacked assets."
+    conditions:
+      - dynamic_collateral_valuation
+    signals:
+      - "borrow("
+    anti_patterns:
+      - "require(healthFactor > 1)"
+    evidence:
+      - show_collateral_valuation
+    remediation:
+      - "Isolate volatile collateral or use robust oracles"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []
+
+  - id: FLASH-004
+    name: Share Inflation via Donation
+    category: flash-loan
+    severity: HIGH
+    confidence: HIGH
+    description: "First depositor inflates share price via direct donation (ERC4626 inflation attack)."
+    conditions:
+      - share_minting_formula
+    signals:
+      - "totalSupply() == 0"
+    anti_patterns:
+      - "Virtual Shares"
+      - "_mint(dead, MIN_LIQUIDITY)"
+    evidence:
+      - show_minting_formula
+    remediation:
+      - "Mint dead shares on first deposit or use virtual offsets"
+    cwe: ["CWE-1339"]
+    swc: []
+    references: []
+
+  - id: FLASH-005
+    name: Flash Loan Callback Exploitation
+    category: flash-loan
+    severity: HIGH
+    confidence: HIGH
+    description: "Flash loan callback does not verify the initiator, allowing arbitrary execution."
+    conditions:
+      - flash_loan_callback_unprotected
+    signals:
+      - "executeOperation"
+    anti_patterns:
+      - "require(msg.sender == pool)"
+      - "require(initiator == address(this))"
+    evidence:
+      - show_unprotected_callback
+    remediation:
+      - "Validate msg.sender and initiator in the callback"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []

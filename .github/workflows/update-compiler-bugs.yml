@@ -1,0 +1,47 @@
+name: Update Compiler Bugs Database
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # Daily at 04:00
+  workflow_dispatch:
+
+jobs:
+  update-bugs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch Latest Bugs DB
+        run: |
+          mkdir -p knowledge/compiler-bugs
+          curl -s https://raw.githubusercontent.com/ethereum/solidity/develop/docs/bugs.json -o bugs_new.json
+
+      - name: Compare with current
+        id: compare
+        run: |
+          if ! cmp -s bugs_new.json knowledge/compiler-bugs/bugs.json; then
+            mv bugs_new.json knowledge/compiler-bugs/bugs.json
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            rm bugs_new.json
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify Knowledge Crate
+        if: steps.compare.outputs.changed == 'true'
+        run: cargo test -p sentinel-knowledge
+
+      - name: Create Pull Request
+        if: steps.compare.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "security: update compiler bugs database"
+          title: "security: update compiler bugs database"
+          body: |
+            Automated update of the Ethereum Solidity compiler bugs database.
+          branch: "update-compiler-bugs"
+          labels: "security, automated-pr"

@@ -1,0 +1,46 @@
+rules:
+  - id: TRANSFER-001
+    name: Arbitrary transferFrom
+    category: arbitrary-transfer
+    severity: HIGH
+    confidence: HIGH
+    description: "transferFrom called with a user-supplied 'from' address that differs from msg.sender. An attacker can drain tokens from any address that has approved this contract."
+    conditions:
+      - transferFrom_called
+      - from_param_is_user_controlled
+      - from_is_not_msg_sender
+    signals:
+      - ".transferFrom("
+      - "IERC20"
+      - "safeTransferFrom"
+    anti_patterns: []
+    evidence:
+      - show_transferFrom
+    remediation:
+      - "Ensure 'from' is msg.sender or use allowance properly"
+    cwe: ["CWE-284"]
+    swc: []
+    references: []
+
+  - id: TRANSFER-002
+    name: Arbitrary Address Spoofing (ERC-2771 + Multicall)
+    category: arbitrary-transfer
+    severity: HIGH
+    confidence: HIGH
+    description: "Contract uses ERC-2771 trusted forwarder pattern together with multicall. An attacker can append a fake sender address to the calldata within a multicall batch, bypassing _msgSender() authentication."
+    conditions:
+      - erc2771_pattern
+      - multicall_pattern
+    signals:
+      - "_msgSender()"
+      - "multicall"
+      - "delegatecall"
+      - "trustedForwarder"
+    anti_patterns: []
+    evidence:
+      - show_multicall
+    remediation:
+      - "Avoid combining ERC-2771 trusted forwarders and multicall directly"
+    cwe: ["CWE-290"]
+    swc: []
+    references: []

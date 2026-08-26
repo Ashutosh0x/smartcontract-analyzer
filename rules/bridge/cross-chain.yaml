@@ -1,0 +1,122 @@
+rules:
+  - id: XCHAIN-001
+    name: Missing Cross-Chain Message Validation
+    category: bridge
+    severity: CRITICAL
+    confidence: HIGH
+    description: "Cross-chain messages do not validate the source chain or sender."
+    conditions:
+      - cross_chain_receive
+      - missing_validation
+    signals:
+      - "lzReceive("
+      - "executeMessage("
+    anti_patterns:
+      - "require(_srcChainId == expectedChain)"
+    evidence:
+      - show_receive_function
+    remediation:
+      - "Validate source chain ID and source sender address"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: XCHAIN-002
+    name: Address Aliasing Not Handled
+    category: bridge
+    severity: HIGH
+    confidence: HIGH
+    description: "L2 bridges (e.g., Arbitrum) apply aliases to L1 contract addresses; missing checks allow spoofing."
+    conditions:
+      - l1_l2_message
+    signals:
+      - "msg.sender == l1Contract"
+    anti_patterns:
+      - "AddressAliasHelper.undoL1ToL2Alias"
+    evidence:
+      - show_auth_check
+    remediation:
+      - "Use proper alias undo logic when verifying L1 senders on L2"
+    cwe: ["CWE-287"]
+    swc: []
+    references: []
+
+  - id: XCHAIN-003
+    name: L2 Sequencer Downtime Not Checked
+    category: bridge
+    severity: HIGH
+    confidence: HIGH
+    description: "Oracles/operations on L2 do not check if sequencer is down."
+    conditions:
+      - l2_oracle_usage
+    signals:
+      - "latestRoundData()"
+    anti_patterns:
+      - "sequencerUptimeFeed"
+    evidence:
+      - show_oracle_read
+    remediation:
+      - "Check Chainlink Sequencer Uptime feed before execution"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []
+
+  - id: XCHAIN-004
+    name: Cross-Chain Replay Attack
+    category: bridge
+    severity: HIGH
+    confidence: HIGH
+    description: "Messages can be replayed on different chains if nonce or chain ID is missing."
+    conditions:
+      - signed_message
+    signals:
+      - "execute("
+    anti_patterns:
+      - "nonces[hash] == true"
+    evidence:
+      - show_execution
+    remediation:
+      - "Include destination chain ID and nonces in cross-chain payloads"
+    cwe: ["CWE-290"]
+    swc: []
+    references: []
+
+  - id: XCHAIN-005
+    name: DVN Trust Assumption
+    category: bridge
+    severity: MEDIUM
+    confidence: HIGH
+    description: "LayerZero DVN configuration relies on a single verifier."
+    conditions:
+      - layerzero_config
+    signals:
+      - "setLzConfig"
+    anti_patterns:
+      - "multiple DVNs required"
+    evidence:
+      - show_dvn_config
+    remediation:
+      - "Configure multiple DVNs to prevent single-point compromise"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []
+
+  - id: XCHAIN-006
+    name: Block Number Assumption on L2
+    category: bridge
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Using block.number on L2 may map to L1 block numbers or L2 block numbers inconsistently."
+    conditions:
+      - l2_block_number
+    signals:
+      - "block.number"
+    anti_patterns:
+      - "block.timestamp"
+    evidence:
+      - show_block_number
+    remediation:
+      - "Use block.timestamp for time-based logic on L2s"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []

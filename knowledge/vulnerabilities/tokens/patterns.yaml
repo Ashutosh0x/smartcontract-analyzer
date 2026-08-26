@@ -1,0 +1,28 @@
+patterns:
+  - id: TOKEN-001
+    name: "Fee-on-Transfer Support"
+    description: "Accounting assumes received amount equals sent amount, ignoring transfer fees."
+    code_snippet: |
+      token.transferFrom(msg.sender, address(this), amount);
+      balances[msg.sender] += amount;
+    detection_signals:
+      - "State updated with parameter amount instead of balance difference."
+    remediation: "Measure balance before and after transfer."
+
+  - id: TOKEN-002
+    name: "ERC777 Hooks Reentrancy"
+    description: "ERC777 tokens call tokensReceived hook, allowing reentrancy."
+    code_snippet: |
+      token.transferFrom(msg.sender, address(this), amount);
+    detection_signals:
+      - "Interaction with arbitrary ERC20 tokens before state changes."
+    remediation: "Apply CEI pattern, use ReentrancyGuard."
+
+  - id: TOKEN-003
+    name: "Missing SafeERC20"
+    description: "Handling non-standard ERC20 tokens that do not return a boolean."
+    code_snippet: |
+      token.transfer(to, amount);
+    detection_signals:
+      - "Direct use of transfer/transferFrom without checking return value or using SafeERC20."
+    remediation: "Use OpenZeppelin's SafeERC20."

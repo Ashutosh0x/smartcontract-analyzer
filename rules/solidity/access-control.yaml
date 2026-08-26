@@ -1,0 +1,169 @@
+rules:
+  - id: ACCESS-001
+    name: Missing Authorization on Critical Function
+    category: access-control
+    severity: HIGH
+    confidence: HIGH
+    description: "Critical state-changing function lacks access control modifiers."
+    conditions:
+      - state_modifying_function
+      - missing_auth_modifier
+    signals:
+      - "public"
+      - "external"
+    anti_patterns:
+      - "onlyOwner"
+      - "onlyRole"
+    evidence:
+      - show_unprotected_function
+    remediation:
+      - "Add onlyOwner or appropriate role modifier"
+    cwe: ["CWE-285"]
+    swc: ["SWC-105"]
+    references: []
+
+  - id: ACCESS-002
+    name: tx.origin Authentication
+    category: access-control
+    severity: HIGH
+    confidence: HIGH
+    description: "Using tx.origin for authentication is vulnerable to phishing attacks."
+    conditions:
+      - tx_origin_used_for_auth
+    signals:
+      - "tx.origin =="
+      - "require(tx.origin"
+    anti_patterns:
+      - "msg.sender =="
+    evidence:
+      - show_tx_origin_usage
+    remediation:
+      - "Use msg.sender instead of tx.origin"
+    cwe: ["CWE-287"]
+    swc: ["SWC-115"]
+    references: []
+
+  - id: ACCESS-003
+    name: Unprotected Initializer
+    category: access-control
+    severity: CRITICAL
+    confidence: HIGH
+    description: "Initializer function can be called by anyone, allowing contract takeover."
+    conditions:
+      - function_named_initialize
+      - missing_initializer_modifier
+    signals:
+      - "initialize("
+    anti_patterns:
+      - "initializer"
+    evidence:
+      - show_unprotected_initialize
+    remediation:
+      - "Add initializer modifier from OpenZeppelin"
+    cwe: ["CWE-285"]
+    swc: ["SWC-105"]
+    references: []
+
+  - id: ACCESS-004
+    name: Missing Zero-Address Check
+    category: access-control
+    severity: LOW
+    confidence: HIGH
+    description: "Missing zero-address check when assigning critical roles."
+    conditions:
+      - role_assignment
+      - no_zero_address_check
+    signals:
+      - "owner ="
+    anti_patterns:
+      - "require(_addr != address(0))"
+    evidence:
+      - show_role_assignment
+    remediation:
+      - "Add require(_newOwner != address(0))"
+    cwe: ["CWE-754"]
+    swc: []
+    references: []
+
+  - id: ACCESS-005
+    name: Centralization Risk (Single Owner)
+    category: access-control
+    severity: MEDIUM
+    confidence: HIGH
+    description: "A single EOA holds critical privileges."
+    conditions:
+      - single_owner_role
+    signals:
+      - "onlyOwner"
+    anti_patterns:
+      - "TimelockController"
+      - "MultiSig"
+    evidence:
+      - show_owner_privileges
+    remediation:
+      - "Use a multisig or timelock for the owner role"
+    cwe: ["CWE-284"]
+    swc: []
+    references: []
+
+  - id: ACCESS-006
+    name: Privilege Escalation via Role Misconfiguration
+    category: access-control
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Role admin can grant arbitrary roles leading to privilege escalation."
+    conditions:
+      - role_admin_grants_roles
+    signals:
+      - "_grantRole("
+    anti_patterns:
+      - "DefaultAdminDelay"
+    evidence:
+      - show_role_granting_logic
+    remediation:
+      - "Restrict role admins and use two-step role transfers"
+    cwe: ["CWE-269"]
+    swc: []
+    references: []
+
+  - id: ACCESS-007
+    name: Timelock Bypass
+    category: access-control
+    severity: HIGH
+    confidence: HIGH
+    description: "Timelock mechanism can be bypassed via direct contract calls."
+    conditions:
+      - timelock_exists
+      - critical_function_callable_by_non_timelock
+    signals:
+      - "execute("
+    anti_patterns:
+      - "onlyTimelock"
+    evidence:
+      - show_bypass_path
+    remediation:
+      - "Ensure all critical functions enforce onlyTimelock"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: ACCESS-008
+    name: Missing Access Control on Self-Destruct
+    category: access-control
+    severity: CRITICAL
+    confidence: HIGH
+    description: "Self-destruct function lacks access control."
+    conditions:
+      - selfdestruct_called
+      - missing_auth
+    signals:
+      - "selfdestruct("
+    anti_patterns:
+      - "onlyOwner"
+    evidence:
+      - show_unprotected_selfdestruct
+    remediation:
+      - "Add authorization or remove selfdestruct"
+    cwe: ["CWE-285"]
+    swc: ["SWC-106"]
+    references: []

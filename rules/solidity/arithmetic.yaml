@@ -1,0 +1,125 @@
+rules:
+  - id: ARITH-001
+    name: Unsafe Integer Cast
+    category: arithmetic
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Downcasting an integer without checking for overflow."
+    conditions:
+      - downcast_integer
+      - missing_safe_cast
+    signals:
+      - "uint128("
+      - "uint64("
+    anti_patterns:
+      - "SafeCast.toUint128"
+    evidence:
+      - show_unsafe_cast
+    remediation:
+      - "Use OpenZeppelin SafeCast library"
+    cwe: ["CWE-190"]
+    swc: []
+    references: []
+
+  - id: ARITH-002
+    name: Division Before Multiplication
+    category: arithmetic
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Division before multiplication can lead to significant precision loss."
+    conditions:
+      - div_before_mul
+    signals:
+      - "/ "
+      - "* "
+    anti_patterns:
+      - "mulDiv"
+    evidence:
+      - show_div_mul_ordering
+    remediation:
+      - "Multiply before dividing to preserve precision"
+    cwe: ["CWE-1339"]
+    swc: []
+    references: []
+
+  - id: ARITH-003
+    name: Precision Loss in Token Calculations
+    category: arithmetic
+    severity: MEDIUM
+    confidence: MEDIUM
+    description: "Calculation involves division that may truncate to zero."
+    conditions:
+      - division_with_variables
+    signals:
+      - "/"
+    anti_patterns:
+      - "require(result > 0)"
+    evidence:
+      - show_truncation_risk
+    remediation:
+      - "Ensure numerator is sufficiently large or check for zero return"
+    cwe: ["CWE-1339"]
+    swc: []
+    references: []
+
+  - id: ARITH-004
+    name: Unchecked Arithmetic in Assembly
+    category: arithmetic
+    severity: HIGH
+    confidence: HIGH
+    description: "Arithmetic operations in Yul/Assembly do not revert on overflow."
+    conditions:
+      - assembly_math
+    signals:
+      - "add("
+      - "mul("
+    anti_patterns:
+      - "safeAdd"
+    evidence:
+      - show_assembly_math
+    remediation:
+      - "Add manual overflow checks in assembly or use Solidity 0.8+ math"
+    cwe: ["CWE-190"]
+    swc: []
+    references: []
+
+  - id: ARITH-005
+    name: Overflow in Unchecked Block
+    category: arithmetic
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Math inside unchecked block can overflow."
+    conditions:
+      - unchecked_block
+      - math_operation
+    signals:
+      - "unchecked {"
+    anti_patterns:
+      - "require(a <= b)"
+    evidence:
+      - show_unchecked_math
+    remediation:
+      - "Ensure bounds are checked before entering unchecked block"
+    cwe: ["CWE-190"]
+    swc: []
+    references: []
+
+  - id: ARITH-006
+    name: Rounding Direction Exploitation
+    category: arithmetic
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Inconsistent rounding direction (e.g., rounding down on deposits, rounding up on withdrawals)."
+    conditions:
+      - division_rounding
+    signals:
+      - "/"
+    anti_patterns:
+      - "Math.mulDiv(a, b, c, Math.Rounding.Up)"
+    evidence:
+      - show_rounding_direction
+    remediation:
+      - "Always round in favor of the protocol (down for user receives, up for user pays)"
+    cwe: ["CWE-1339"]
+    swc: []
+    references: []

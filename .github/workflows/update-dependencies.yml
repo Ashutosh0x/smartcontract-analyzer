@@ -1,0 +1,62 @@
+name: Update Dependencies
+
+on:
+  schedule:
+    - cron: '0 3 * * 3' # Weekly on Wednesday
+  workflow_dispatch:
+
+jobs:
+  update-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit & cargo-deny
+        run: |
+          cargo install cargo-audit
+          cargo install cargo-deny
+
+      - name: Cargo Update
+        run: cargo update
+
+      - name: Run cargo audit
+        run: cargo audit
+
+      - name: Run cargo deny
+        run: cargo deny check
+
+      - name: Build Project
+        run: cargo build --all-targets --all-features
+
+      - name: Run Full Test Suite
+        run: cargo test --all-targets --all-features
+
+      - name: Run Benchmarks
+        run: cargo bench
+
+      - name: Check for Security Advisories
+        id: check_sec
+        run: |
+          # If audit fails, we can add a 'security' label.
+          # We run it again, catch exit code
+          if ! cargo audit; then
+            echo "security_label=security" >> $GITHUB_OUTPUT
+          else
+            echo "security_label=" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update rust dependencies"
+          title: "chore: update rust dependencies"
+          body: |
+            Automated weekly Rust dependencies update.
+          branch: "weekly-cargo-update"
+          labels: "dependencies, automated-pr, ${{ steps.check_sec.outputs.security_label }}"

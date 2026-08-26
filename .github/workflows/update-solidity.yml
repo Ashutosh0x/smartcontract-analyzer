@@ -1,0 +1,51 @@
+name: Update Solidity Support
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Every Monday at 06:00
+  workflow_dispatch:
+
+jobs:
+  update-solidity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest Solidity version
+        id: get_solc
+        run: |
+          LATEST_SOLC=$(curl -s https://api.github.com/repos/ethereum/solidity/releases/latest | jq -r .tag_name)
+          echo "latest_version=$LATEST_SOLC" >> $GITHUB_OUTPUT
+
+      - name: Check current supported version
+        id: check_current
+        run: |
+          CURRENT_SOLC=$(cat knowledge/solidity-versions/latest.json | jq -r .latest)
+          echo "current_version=$CURRENT_SOLC" >> $GITHUB_OUTPUT
+
+      - name: Update knowledge database
+        if: steps.get_solc.outputs.latest_version != steps.check_current.outputs.current_version
+        run: |
+          echo "{\"latest\": \"${{ steps.get_solc.outputs.latest_version }}\"}" > knowledge/solidity-versions/latest.json
+          # In a real setup, we would download solc here
+          echo "Updated to ${{ steps.get_solc.outputs.latest_version }}"
+
+      - name: Run Test Suite
+        if: steps.get_solc.outputs.latest_version != steps.check_current.outputs.current_version
+        run: cargo test
+
+      - name: Create Pull Request
+        if: steps.get_solc.outputs.latest_version != steps.check_current.outputs.current_version
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update Solidity support to ${{ steps.get_solc.outputs.latest_version }}"
+          title: "chore: update Solidity support to ${{ steps.get_solc.outputs.latest_version }}"
+          body: |
+            Automated update of Solidity compiler support.
+            Updated from ${{ steps.check_current.outputs.current_version }} to ${{ steps.get_solc.outputs.latest_version }}.
+          branch: "update-solidity-${{ steps.get_solc.outputs.latest_version }}"
+          labels: "solidity, automated-pr"

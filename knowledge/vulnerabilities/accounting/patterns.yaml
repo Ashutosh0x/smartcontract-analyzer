@@ -1,0 +1,18 @@
+patterns:
+  - id: ACCOUNTING-001
+    name: "Share Inflation / ERC4626 Donation Attack"
+    description: "First depositor mints shares and then donates assets to inflate share price, causing subsequent depositors to lose precision/funds."
+    code_snippet: |
+      uint256 shares = (amount * totalShares) / totalAssets;
+    detection_signals:
+      - "Division by totalAssets where totalAssets can be artificially inflated via direct transfers."
+    remediation: "Mint dead shares on first deposit (e.g., OpenZeppelin's ERC4626 mitigation)."
+
+  - id: ACCOUNTING-002
+    name: "Precision Loss"
+    description: "Division before multiplication leads to rounding down to zero or significant precision loss."
+    code_snippet: |
+      uint256 reward = (amount / total) * rate;
+    detection_signals:
+      - "Division operation followed by multiplication on the same variable."
+    remediation: "Perform all multiplications before division."

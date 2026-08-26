@@ -1,0 +1,57 @@
+{
+  "version": "2026.08",
+  "bugs": [
+    {
+      "id": "SOL-2022-4",
+      "name": "HeadOverflowBug",
+      "severity": "HIGH",
+      "affected_versions": ">=0.5.0 <0.8.14",
+      "fixed_version": "0.8.14",
+      "component": "abi_encoder_v2",
+      "description": "ABI encoder v2 can improperly encode data if calldata strings or bytes arrays are passed to external calls and their length is extremely large.",
+      "exploitability": "High if contracts accept unvalidated arrays/strings and pass them to other contracts.",
+      "recommendation": "Upgrade to Solidity 0.8.14 or newer. Avoid passing unvalidated large arrays from calldata directly to other external functions.",
+      "references": ["https://blog.soliditylang.org/2022/05/18/solidity-0.8.14-release-announcement/"],
+      "cwe": "CWE-119"
+    },
+    {
+      "id": "SOL-2022-6",
+      "name": "StorageWriteRemovalBeforeConditional",
+      "severity": "HIGH",
+      "affected_versions": ">=0.8.13 <0.8.17",
+      "fixed_version": "0.8.17",
+      "component": "yul_optimizer",
+      "description": "The Yul optimizer can incorrectly remove storage writes before a conditional branch if the write is considered redundant, leading to incorrect state.",
+      "exploitability": "High in complex logic where state variables are updated conditionally.",
+      "recommendation": "Upgrade to Solidity 0.8.17 or newer. Disable Yul optimizer if upgrade is not possible.",
+      "references": ["https://blog.soliditylang.org/2022/09/08/yul-optimizer-bug/"],
+      "cwe": "CWE-682"
+    },
+    {
+      "id": "SOL-2020-2",
+      "name": "EmptyByteArrayCopyBug",
+      "severity": "MEDIUM",
+      "affected_versions": ">=0.7.3 <0.7.4",
+      "fixed_version": "0.7.4",
+      "component": "abi_encoder_v2",
+      "description": "Copying an empty byte array from memory or calldata to storage can result in data corruption.",
+      "exploitability": "Medium. Occurs when dynamic arrays of length 0 are copied to storage.",
+      "recommendation": "Upgrade to Solidity 0.7.4 or newer.",
+      "references": ["https://blog.soliditylang.org/2020/10/07/empty-byte-array-copy-bug/"],
+      "cwe": "CWE-119"
+    },
+    {
+      "id": "SOL-2023-1",
+      "name": "ZeroStorageDeleteBug",
+      "severity": "LOW",
+      "affected_versions": ">=0.8.18 <0.8.21",
+      "fixed_version": "0.8.21",
+      "component": "compiler",
+      "description": "Deleting a struct containing a zero-sized array might not properly clear the remaining fields in some specific configurations.",
+      "exploitability": "Low. Requires a struct with a zero-sized array.",
+      "recommendation": "Upgrade to Solidity 0.8.21.",
+      "references": ["https://docs.soliditylang.org/en/latest/bugs.html"],
+      "cwe": "CWE-459"
+    }
+  ]
+}

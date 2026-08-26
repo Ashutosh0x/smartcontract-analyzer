@@ -1,0 +1,102 @@
+rules:
+  - id: COMPILER-001
+    name: Known Compiler Bug Detected
+    category: compiler
+    severity: HIGH
+    confidence: HIGH
+    description: "Contract uses a Solidity version with a known critical bug (e.g., Keccak256 caching bug in 0.8.14)."
+    conditions:
+      - bad_pragma_version
+    signals:
+      - "pragma solidity 0.8.14"
+    anti_patterns:
+      - "pragma solidity ^0.8.18"
+    evidence:
+      - show_pragma
+    remediation:
+      - "Upgrade to a stable version (e.g., 0.8.20+)"
+    cwe: ["CWE-937"]
+    swc: []
+    references: []
+
+  - id: COMPILER-002
+    name: Optimizer Bug Risk (via-IR)
+    category: compiler
+    severity: MEDIUM
+    confidence: LOW
+    description: "via-IR pipeline with certain optimization steps can cause code generation bugs in older versions."
+    conditions:
+      - via_ir_enabled
+    signals:
+      - "viaIR: true"
+    anti_patterns:
+      - "solc >= 0.8.21"
+    evidence:
+      - show_compiler_config
+    remediation:
+      - "Ensure solc is >= 0.8.21 if via-IR is used"
+    cwe: ["CWE-937"]
+    swc: []
+    references: []
+
+  - id: COMPILER-003
+    name: ABI Encoder v2 Edge Case
+    category: compiler
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Old ABI encoder bugs in versions prior to 0.8.0."
+    conditions:
+      - old_solc_abi_encoder
+    signals:
+      - "pragma experimental ABIEncoderV2"
+    anti_patterns:
+      - "pragma solidity ^0.8.0"
+    evidence:
+      - show_abi_encoder
+    remediation:
+      - "Upgrade compiler to 0.8.x"
+    cwe: ["CWE-937"]
+    swc: []
+    references: []
+
+  - id: COMPILER-004
+    name: Memory Safety Violation in Assembly
+    category: compiler
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Inline assembly writes to reserved memory slots (0x00 - 0x3f) unsafely."
+    conditions:
+      - assembly_memory_overwrite
+    signals:
+      - "mstore(0x40"
+    anti_patterns:
+      - "let ptr := mload(0x40)"
+    evidence:
+      - show_mstore
+    remediation:
+      - "Respect solidity memory layout and free memory pointer"
+    cwe: ["CWE-119"]
+    swc: []
+    references: []
+
+  - id: COMPILER-005
+    name: Deprecated Feature Usage
+    category: compiler
+    severity: LOW
+    confidence: HIGH
+    description: "Usage of deprecated built-ins (e.g., suicide, sha3)."
+    conditions:
+      - deprecated_builtin
+    signals:
+      - "suicide("
+      - "sha3("
+    anti_patterns:
+      - "selfdestruct"
+      - "keccak256"
+    evidence:
+      - show_deprecated_keyword
+    remediation:
+      - "Update syntax to modern solidity standards"
+    cwe: ["CWE-477"]
+    swc: []
+    references: []

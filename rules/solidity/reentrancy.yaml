@@ -1,0 +1,138 @@
+rules:
+  - id: REENTRANCY-001
+    name: Classic Reentrancy
+    category: reentrancy
+    severity: HIGH
+    confidence: HIGH
+    description: "External call precedes state variable update, allowing re-entrant calls to exploit stale state."
+    conditions:
+      - external_call_before_state_update
+      - no_reentrancy_guard
+      - function_is_public_or_external
+    signals:
+      - ".call{value:"
+      - ".transfer("
+      - ".send("
+    anti_patterns:
+      - nonReentrant
+      - ReentrancyGuard
+      - ReentrancyGuardTransient
+    evidence:
+      - show_external_call_location
+      - show_state_update_location
+      - show_call_ordering
+    remediation:
+      - "Apply checks-effects-interactions pattern"
+      - "Use OpenZeppelin ReentrancyGuard"
+      - "Update state before external calls"
+    cwe: ["CWE-841"]
+    swc: ["SWC-107"]
+    references:
+      - "https://swcregistry.io/docs/SWC-107"
+
+  - id: REENTRANCY-002
+    name: Cross-Function Reentrancy
+    category: reentrancy
+    severity: HIGH
+    confidence: MEDIUM
+    description: "State is shared between two functions, one makes an external call, the other uses the stale state."
+    conditions:
+      - external_call_in_function_a
+      - state_update_in_function_a_after_call
+      - state_read_in_function_b
+    signals:
+      - ".call"
+    anti_patterns:
+      - nonReentrant
+    evidence:
+      - show_shared_state_variable
+    remediation:
+      - "Apply global reentrancy guards across shared state functions"
+    cwe: ["CWE-841"]
+    swc: ["SWC-107"]
+    references: []
+
+  - id: REENTRANCY-003
+    name: Cross-Contract Reentrancy
+    category: reentrancy
+    severity: HIGH
+    confidence: LOW
+    description: "External call to untrusted contract allows reentrancy into a different contract sharing state/views."
+    conditions:
+      - external_call
+      - external_view_read_before_update
+    signals:
+      - ".call"
+      - "interface("
+    anti_patterns:
+      - nonReentrant
+    evidence:
+      - show_cross_contract_view_dependencies
+    remediation:
+      - "Synchronize state updates before cross-contract interactions"
+    cwe: ["CWE-841"]
+    swc: ["SWC-107"]
+    references: []
+
+  - id: REENTRANCY-004
+    name: Read-Only Reentrancy
+    category: reentrancy
+    severity: MEDIUM
+    confidence: HIGH
+    description: "A view function returns stale state during a reentrant call, often used by external integrators (e.g., pricing oracles)."
+    conditions:
+      - state_update_after_external_call
+      - view_function_reads_state
+    signals:
+      - "view returns"
+    anti_patterns:
+      - nonReentrantView
+    evidence:
+      - show_view_function_and_stale_state
+    remediation:
+      - "Add reentrancy guards to view functions if they expose critical mid-execution state"
+    cwe: ["CWE-841"]
+    swc: ["SWC-107"]
+    references: []
+
+  - id: REENTRANCY-005
+    name: EIP-1153 Transient Storage Reentrancy Bypass
+    category: reentrancy
+    severity: HIGH
+    confidence: HIGH
+    description: "Transient storage locks (tstore/tload) are improperly cleared or bypassed during deep call stacks."
+    conditions:
+      - uses_tstore
+      - missing_tstore_clear
+    signals:
+      - "tstore"
+      - "tload"
+    anti_patterns:
+      - "tstore(slot, 0)"
+    evidence:
+      - show_tstore_usage_without_clear
+    remediation:
+      - "Ensure transient storage locks are always cleared at the end of the transaction"
+    cwe: ["CWE-664"]
+    swc: ["SWC-107"]
+    references: []
+
+  - id: REENTRANCY-006
+    name: Reentrancy with Out-of-Order Events
+    category: reentrancy
+    severity: MEDIUM
+    confidence: MEDIUM
+    description: "Event is emitted after an external call. A re-entrant call can cause events to be logged in the wrong order, confusing off-chain indexers and monitors."
+    conditions:
+      - event_after_external_call
+    signals:
+      - "emit "
+      - ".call{"
+    anti_patterns: []
+    evidence:
+      - show_event_and_call_order
+    remediation:
+      - "Emit events before external calls"
+    cwe: []
+    swc: []
+    references: []

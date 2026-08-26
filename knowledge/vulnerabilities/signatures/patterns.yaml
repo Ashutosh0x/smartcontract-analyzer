@@ -1,0 +1,20 @@
+patterns:
+  - id: SIGNATURE-001
+    name: "Signature Replay"
+    description: "Signatures can be reused across transactions, chains, or contracts if missing nonces and chain IDs."
+    code_snippet: |
+      bytes32 hash = keccak256(abi.encodePacked(msg.sender, amount));
+      require(recover(hash, signature) == owner);
+    detection_signals:
+      - "Missing nonce in signature payload."
+      - "Missing chain.id or domain separator."
+    remediation: "Use EIP-712 structured data hashing with nonces and chain ID."
+
+  - id: SIGNATURE-002
+    name: "encodePacked Collision"
+    description: "abi.encodePacked with dynamic types can result in hash collisions."
+    code_snippet: |
+      bytes32 hash = keccak256(abi.encodePacked(stringA, stringB));
+    detection_signals:
+      - "abi.encodePacked used with multiple dynamic types (string, bytes)."
+    remediation: "Use abi.encode instead of abi.encodePacked for multiple dynamic types."

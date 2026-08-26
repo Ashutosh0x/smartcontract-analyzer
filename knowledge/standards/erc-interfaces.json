@@ -1,0 +1,61 @@
+{
+  "standards": {
+    "ERC20": {
+      "name": "Token Standard",
+      "functions": {
+        "totalSupply()": "0x18160ddd",
+        "balanceOf(address)": "0x70a08231",
+        "transfer(address,uint256)": "0xa9059cbb",
+        "transferFrom(address,address,uint256)": "0x23b872dd",
+        "approve(address,uint256)": "0x095ea7b3",
+        "allowance(address,address)": "0xdd62ed3e"
+      }
+    },
+    "ERC721": {
+      "name": "Non-Fungible Token Standard",
+      "functions": {
+        "balanceOf(address)": "0x70a08231",
+        "ownerOf(uint256)": "0x6352211e",
+        "safeTransferFrom(address,address,uint256,bytes)": "0xb88d4fde",
+        "safeTransferFrom(address,address,uint256)": "0x42842e0e",
+        "transferFrom(address,address,uint256)": "0x23b872dd",
+        "approve(address,uint256)": "0x095ea7b3",
+        "setApprovalForAll(address,bool)": "0xa22cb465",
+        "getApproved(uint256)": "0x081812fc",
+        "isApprovedForAll(address,address)": "0xe985e9c5"
+      }
+    },
+    "ERC1155": {
+      "name": "Multi Token Standard",
+      "functions": {
+        "balanceOf(address,uint256)": "0x00fdd58e",
+        "balanceOfBatch(address[],uint256[])": "0x4e1273f4",
+        "setApprovalForAll(address,bool)": "0xa22cb465",
+        "isApprovedForAll(address,address)": "0xe985e9c5",
+        "safeTransferFrom(address,address,uint256,uint256,bytes)": "0xf242432a",
+        "safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)": "0x2eb2c2d6"
+      }
+    },
+    "ERC4626": {
+      "name": "Tokenized Vault Standard",
+      "functions": {
+        "asset()": "0x38d52e0f",
+        "totalAssets()": "0x01e1d114",
+        "convertToShares(uint256)": "0xc6e6f592",
+        "convertToAssets(uint256)": "0x07a2d13a",
+        "maxDeposit(address)": "0x402d267d",
+        "previewDeposit(uint256)": "0xef8b30f7",
+        "deposit(uint256,address)": "0x6e553f65",
+        "maxMint(address)": "0xc63d75b6",
+        "previewMint(uint256)": "0xb3d7f6b9",
+        "mint(uint256,address)": "0x94bf804d",
+        "maxWithdraw(address)": "0xce96cb77",
+        "previewWithdraw(uint256)": "0x0a28a477",
+        "withdraw(uint256,address,address)": "0xb460af94",
+        "maxRedeem(address)": "0xd905777e",
+        "previewRedeem(uint256)": "0x4ba4c16b",
+        "redeem(uint256,address,address)": "0xba087652"
+      }
+    }
+  }
+}

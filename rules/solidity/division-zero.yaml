@@ -1,0 +1,25 @@
+rules:
+  - id: DIVZERO-001
+    name: Possible Division By Zero
+    category: division-zero
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Division operation where the divisor could be zero. Solidity reverts on division by zero, causing DoS if the divisor is user-controlled."
+    conditions:
+      - division_operation
+      - divisor_not_validated
+    signals:
+      - "/ "
+      - "% "
+    anti_patterns:
+      - "require("
+      - "assert("
+      - "if ("
+      - "> 0"
+    evidence:
+      - show_division_zero
+    remediation:
+      - "Add a check to prevent division by zero"
+    cwe: ["CWE-369"]
+    swc: ["SWC-101"]
+    references: []

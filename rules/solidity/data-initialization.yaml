@@ -1,0 +1,57 @@
+rules:
+  - id: DATA-001
+    name: Uninitialized Local Storage Variable
+    category: data-initialization
+    severity: HIGH
+    confidence: HIGH
+    description: "Local variable of storage reference type is not initialized. It defaults to storage slot 0, potentially aliasing critical state variables."
+    conditions:
+      - local_variable_storage_type
+      - no_assignment_before_use
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_uninitialized_local_storage
+    remediation:
+      - "Initialize variable upon declaration or assign it before use"
+    cwe: ["CWE-457"]
+    swc: ["SWC-109"]
+    references: []
+
+  - id: DATA-002
+    name: Uninitialized State Variable
+    category: data-initialization
+    severity: MEDIUM
+    confidence: MEDIUM
+    description: "State variable is declared but never assigned a value. It uses Solidity's default (0/false/address(0)), which may not be the intended behavior."
+    conditions:
+      - state_variable_declared
+      - no_assignment_in_constructor_or_initializer
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_uninitialized_state_var
+    remediation:
+      - "Initialize state variable"
+    cwe: ["CWE-457"]
+    swc: ["SWC-109"]
+    references: []
+
+  - id: DATA-003
+    name: Uninitialized Function Pointer in Constructor
+    category: data-initialization
+    severity: HIGH
+    confidence: HIGH
+    description: "Function pointer variable in constructor is not initialized before being called. In Solidity <0.5.0, this executes arbitrary code."
+    conditions:
+      - function_pointer_in_constructor
+      - no_initialization
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_uninitialized_func_ptr
+    remediation:
+      - "Initialize function pointer"
+    cwe: ["CWE-824"]
+    swc: ["SWC-109"]
+    references: []

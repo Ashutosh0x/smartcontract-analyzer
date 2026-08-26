@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build_and_test:
+    name: Build and Test (${{ matrix.os }}, ${{ matrix.toolchain }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        toolchain: [stable, nightly]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ${{ matrix.os }}-${{ matrix.toolchain }}-cargo
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+        if: matrix.toolchain == 'stable'
+
+      - name: Clippy linting
+        run: cargo clippy --all-targets --all-features -- -D warnings
+        if: matrix.toolchain == 'stable'
+
+      - name: Build
+        run: cargo build --all-targets --all-features
+
+      - name: Test (debug)
+        run: cargo test --all-targets --all-features
+
+      - name: Test (release)
+        run: cargo test --release --all-targets --all-features
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.toolchain }}
+          path: target/debug/deps/*.xml

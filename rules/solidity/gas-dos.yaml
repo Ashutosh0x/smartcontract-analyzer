@@ -1,0 +1,219 @@
+rules:
+  - id: GAS-001
+    name: Calls In Loop
+    category: gas-dos
+    severity: MEDIUM
+    confidence: HIGH
+    description: "External calls inside loops can cause DoS if any call fails or runs out of gas. The entire transaction reverts."
+    conditions:
+      - external_call_inside_loop
+      - no_try_catch
+      - loop_bound_not_fixed
+    signals:
+      - ".call{"
+      - ".transfer("
+      - ".send("
+      - "for ("
+      - "while ("
+    anti_patterns: []
+    evidence:
+      - show_loop_with_call
+    remediation:
+      - "Pull over push pattern or bounds limits"
+    cwe: ["CWE-400"]
+    swc: ["SWC-113"]
+    references: []
+
+  - id: GAS-002
+    name: DelegateCall In Loop with msg.value
+    category: gas-dos
+    severity: HIGH
+    confidence: HIGH
+    description: "Using delegatecall with msg.value inside a loop allows the same msg.value to be reused across iterations, enabling double-spending."
+    conditions:
+      - delegatecall_inside_loop
+      - msg_value_forwarded
+    signals:
+      - ".delegatecall("
+      - "msg.value"
+      - "for ("
+      - "while ("
+    anti_patterns: []
+    evidence:
+      - show_delegatecall_loop
+    remediation:
+      - "Do not use delegatecall with msg.value inside a loop"
+    cwe: ["CWE-675"]
+    swc: []
+    references: []
+
+  - id: GAS-003
+    name: msg.value Reuse In Loop
+    category: gas-dos
+    severity: HIGH
+    confidence: HIGH
+    description: "msg.value is accessed multiple times inside a loop. Since msg.value doesn't decrease, each iteration uses the full value, leading to incorrect accounting."
+    conditions:
+      - msg_value_in_loop_body
+      - loop_sends_value
+    signals:
+      - "msg.value"
+      - "for ("
+      - "while ("
+    anti_patterns: []
+    evidence:
+      - show_msg_value_loop
+    remediation:
+      - "Use a local variable for tracking remaining value"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: GAS-004
+    name: Locked Ether
+    category: gas-dos
+    severity: MEDIUM
+    confidence: MEDIUM
+    description: "Contract has payable functions or receive/fallback but no mechanism to withdraw ETH (no transfer, send, or call with value)."
+    conditions:
+      - has_payable_function_or_receive
+      - no_ether_withdrawal_path
+    signals:
+      - "payable"
+      - "receive()"
+      - "fallback()"
+    anti_patterns:
+      - "transfer("
+      - ".call{value:"
+      - ".send("
+      - "selfdestruct("
+    evidence:
+      - show_payable_without_withdraw
+    remediation:
+      - "Add a withdraw function"
+    cwe: ["CWE-710"]
+    swc: ["SWC-132"]
+    references: []
+
+  - id: GAS-005
+    name: Call Without Gas Budget
+    category: gas-dos
+    severity: LOW
+    confidence: MEDIUM
+    description: "Low-level call forwards all available gas. Consider using a gas budget to prevent reentrancy or griefing."
+    conditions: []
+    signals:
+      - ".call{value:"
+    anti_patterns:
+      - ".call{gas:"
+      - ".call{value: 0}"
+    evidence:
+      - show_call_without_gas
+    remediation:
+      - "Specify gas budget"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: GAS-006
+    name: External Call Potential Out of Gas
+    category: gas-dos
+    severity: MEDIUM
+    confidence: MEDIUM
+    description: "External call to address that may be a contract. If the receiving contract has complex fallback logic, the call may run out of gas."
+    conditions: []
+    signals:
+      - ".transfer("
+      - ".send("
+    anti_patterns: []
+    evidence:
+      - show_external_call
+    remediation:
+      - "Consider using .call with gas budget"
+    cwe: ["CWE-400"]
+    swc: []
+    references: []
+
+  - id: GAS-007
+    name: Increasing Length Array As Loop Variable
+    category: gas-dos
+    severity: HIGH
+    confidence: HIGH
+    description: "Array that grows unboundedly is used as loop bound. As the array grows, the loop may exceed block gas limit causing permanent DoS."
+    conditions:
+      - array_push_exists
+      - array_length_as_loop_bound
+    signals:
+      - ".push("
+      - ".length"
+      - "for ("
+    anti_patterns: []
+    evidence:
+      - show_unbounded_loop
+    remediation:
+      - "Implement array size limits or pagination"
+    cwe: ["CWE-400"]
+    swc: ["SWC-128"]
+    references: []
+
+  - id: GAS-008
+    name: Ether Balance Strict Equality
+    category: gas-dos
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Strict equality check on address(this).balance can be manipulated via selfdestruct or coinbase transactions, causing DoS."
+    conditions:
+      - balance_equality_check
+    signals:
+      - "address(this).balance =="
+      - "address(this).balance !="
+    anti_patterns:
+      - "address(this).balance >="
+      - "address(this).balance <="
+    evidence:
+      - show_balance_equality
+    remediation:
+      - "Use >= or <= instead of =="
+    cwe: ["CWE-670"]
+    swc: ["SWC-132"]
+    references: []
+
+  - id: GAS-009
+    name: Empty Payable Fallback
+    category: gas-dos
+    severity: LOW
+    confidence: HIGH
+    description: "Payable fallback or receive function with no logic. Ether sent to this contract cannot be recovered."
+    conditions: []
+    signals:
+      - "receive() external payable {}"
+      - "fallback() external payable {}"
+    anti_patterns: []
+    evidence:
+      - show_empty_payable
+    remediation:
+      - "Remove or implement logic"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: GAS-010
+    name: No Access Control on Payable Fallback
+    category: gas-dos
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Payable fallback/receive has no access control. Anyone can send ETH, potentially disrupting balance-dependent logic."
+    conditions: []
+    signals:
+      - "receive() external payable"
+      - "fallback() external payable"
+    anti_patterns:
+      - "require(msg.sender"
+      - "onlyOwner"
+    evidence:
+      - show_payable_no_access
+    remediation:
+      - "Add access control"
+    cwe: []
+    swc: []
+    references: []

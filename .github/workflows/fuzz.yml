@@ -1,0 +1,43 @@
+name: Fuzz Testing
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Nightly
+  workflow_dispatch:
+
+jobs:
+  fuzzing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Run Fuzz Targets
+        run: |
+          for target in $(cargo fuzz list); do
+            echo "Fuzzing $target..."
+            cargo fuzz run "$target" -- -max_total_time=600 || {
+              echo "CRASH_FOUND=true" >> $GITHUB_ENV
+              echo "CRASH_TARGET=$target" >> $GITHUB_ENV
+              exit 1
+            }
+          done
+
+      - name: Create Issue on Crash
+        if: env.CRASH_FOUND == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Fuzzing crash found in ${process.env.CRASH_TARGET}`,
+              body: "A crash was found during nightly fuzzing. Check workflow logs.",
+              labels: ["bug", "security"]
+            })

@@ -1,0 +1,34 @@
+patterns:
+  - id: REENTRANCY-001
+    name: "Classic Reentrancy"
+    description: "External call is made before state updates."
+    code_snippet: |
+      function withdraw() external {
+          uint amount = balances[msg.sender];
+          (bool success, ) = msg.sender.call{value: amount}("");
+          require(success);
+          balances[msg.sender] = 0;
+      }
+    detection_signals:
+      - "State variable mutation after low-level call (.call)"
+      - "CEI (Checks-Effects-Interactions) pattern violation"
+    remediation: "Apply CEI pattern. Use ReentrancyGuard."
+
+  - id: REENTRANCY-002
+    name: "Cross-Function Reentrancy"
+    description: "Reentering a different function that shares the same state."
+    code_snippet: |
+      function withdraw() external { ... }
+      function transfer() external { ... }
+    detection_signals:
+      - "Multiple functions modifying the same state without shared lock"
+    remediation: "Use contract-wide ReentrancyGuard (nonReentrant modifier)."
+
+  - id: REENTRANCY-003
+    name: "Read-Only Reentrancy"
+    description: "External protocols read inconsistent state during a reentrant call."
+    code_snippet: |
+      function getPrice() external view returns (uint) { ... }
+    detection_signals:
+      - "View functions exposing state that is temporarily inconsistent during an interaction."
+    remediation: "Implement read-only reentrancy locks on view functions or ensure state is consistent before any external calls."

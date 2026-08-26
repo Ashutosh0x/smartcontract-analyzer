@@ -1,0 +1,163 @@
+rules:
+  - id: SIG-001
+    name: Signature Replay Attack
+    category: signatures
+    severity: HIGH
+    confidence: HIGH
+    description: "Signatures can be replayed if they lack nonces or contract-specific domains."
+    conditions:
+      - ecrecover_used
+      - missing_nonce_or_domain
+    signals:
+      - "ecrecover("
+    anti_patterns:
+      - "nonces[signer]++"
+      - "EIP712Domain"
+    evidence:
+      - show_signature_verification
+    remediation:
+      - "Include nonces and EIP-712 domain separators"
+    cwe: ["CWE-290"]
+    swc: ["SWC-117"]
+    references: []
+
+  - id: SIG-002
+    name: Missing Nonce in Signed Message
+    category: signatures
+    severity: HIGH
+    confidence: HIGH
+    description: "Signed message lacks a nonce, allowing identical operations to be repeated."
+    conditions:
+      - missing_nonce
+    signals:
+      - "ecrecover("
+    anti_patterns:
+      - "nonce"
+    evidence:
+      - show_message_hash
+    remediation:
+      - "Include an incrementing nonce in the signed payload"
+    cwe: ["CWE-290"]
+    swc: ["SWC-117"]
+    references: []
+
+  - id: SIG-003
+    name: Missing Deadline/Expiry
+    category: signatures
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Signature is valid indefinitely, which could be abused if conditions change."
+    conditions:
+      - missing_deadline
+    signals:
+      - "ecrecover("
+    anti_patterns:
+      - "require(block.timestamp <= deadline)"
+    evidence:
+      - show_signature_logic
+    remediation:
+      - "Include a deadline in the signed payload and verify it"
+    cwe: ["CWE-613"]
+    swc: []
+    references: []
+
+  - id: SIG-004
+    name: Chain ID Not Included in Domain Separator
+    category: signatures
+    severity: HIGH
+    confidence: HIGH
+    description: "Signatures can be replayed across different chains (e.g., forks)."
+    conditions:
+      - missing_chainid
+    signals:
+      - "DOMAIN_SEPARATOR"
+    anti_patterns:
+      - "block.chainid"
+    evidence:
+      - show_domain_separator
+    remediation:
+      - "Include block.chainid in EIP-712 Domain Separator"
+    cwe: ["CWE-290"]
+    swc: ["SWC-117"]
+    references: []
+
+  - id: SIG-005
+    name: abi.encodePacked Hash Collision
+    category: signatures
+    severity: HIGH
+    confidence: HIGH
+    description: "Using abi.encodePacked with multiple dynamic types can cause hash collisions."
+    conditions:
+      - encodePacked_dynamic_types
+    signals:
+      - "abi.encodePacked("
+    anti_patterns:
+      - "abi.encode("
+    evidence:
+      - show_encodePacked
+    remediation:
+      - "Use abi.encode for multiple dynamic types (string/bytes)"
+    cwe: ["CWE-295"]
+    swc: []
+    references: []
+
+  - id: SIG-006
+    name: Signature Malleability (Missing s-value Check)
+    category: signatures
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Signatures can be malleable if the s-value is not restricted to the lower half of the secp256k1 curve."
+    conditions:
+      - missing_s_value_check
+    signals:
+      - "ecrecover("
+    anti_patterns:
+      - "require(uint256(s) <= 0x7FFFFFFF..."
+      - "ECDSA.recover"
+    evidence:
+      - show_ecrecover
+    remediation:
+      - "Use OpenZeppelin's ECDSA library"
+    cwe: ["CWE-347"]
+    swc: ["SWC-117"]
+    references: []
+
+  - id: SIG-007
+    name: ecrecover Returns Zero Address
+    category: signatures
+    severity: HIGH
+    confidence: HIGH
+    description: "ecrecover returns address(0) on invalid signatures. This can authorize zero-address owners."
+    conditions:
+      - missing_zero_address_check
+    signals:
+      - "ecrecover("
+    anti_patterns:
+      - "require(recovered != address(0))"
+    evidence:
+      - show_ecrecover_return
+    remediation:
+      - "Require recovered address is not address(0)"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: SIG-008
+    name: Cross-Chain Signature Replay
+    category: signatures
+    severity: HIGH
+    confidence: HIGH
+    description: "Signatures are valid on multiple networks deployed at the same address."
+    conditions:
+      - static_domain_separator
+    signals:
+      - "DOMAIN_SEPARATOR ="
+    anti_patterns:
+      - "block.chainid"
+    evidence:
+      - show_static_domain
+    remediation:
+      - "Dynamically construct DOMAIN_SEPARATOR with current block.chainid"
+    cwe: ["CWE-290"]
+    swc: []
+    references: []

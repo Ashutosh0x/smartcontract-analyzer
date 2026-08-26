@@ -1,0 +1,33 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # Daily
+  pull_request:
+    paths:
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Security Tools
+        run: |
+          cargo install cargo-audit
+          cargo install cargo-deny
+
+      - name: Run Cargo Audit
+        run: cargo audit
+
+      - name: Check Advisories (cargo-deny)
+        run: cargo deny check advisories
+
+      - name: Check Licenses (cargo-deny)
+        run: cargo deny check licenses

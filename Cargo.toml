@@ -1,0 +1,81 @@
+[package]
+name = "smartcontract-analyzer"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "Sentinel: Professional-grade smart contract security analyzer"
+license = "MIT"
+repository = "https://github.com/sentinel-security/sentinel"
+keywords = ["solidity", "ethereum", "security", "smart-contracts", "audit"]
+categories = ["development-tools", "command-line-utilities"]
+
+[[bin]]
+name = "sentinel"
+path = "src/main.rs"
+
+[dependencies]
+# CLI
+clap = { version = "4", features = ["derive", "env"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Async
+tokio = { version = "1", features = ["full"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Crypto/hashing
+sha2 = "0.10"
+hex = "0.4"
+
+# File handling
+walkdir = "2"
+globset = "0.4"
+
+# Colored terminal output
+colored = "2"
+comfy-table = "7"
+indicatif = "0.17"
+
+# Regex for pattern matching
+regex = "1"
+
+# Semver for version handling
+semver = { version = "1", features = ["serde"] }
+
+# Petgraph for graph analysis
+petgraph = "0.6"
+
+# UUID
+uuid = { version = "1", features = ["v4"] }
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Rayon for parallelism
+rayon = "1"
+
+[dev-dependencies]
+tempfile = "3"
+assert_cmd = "2"
+predicates = "3"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "analysis_benchmark"
+harness = false
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true

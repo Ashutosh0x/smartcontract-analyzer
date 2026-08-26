@@ -1,0 +1,53 @@
+rules:
+  - id: SHADOW-001
+    name: State Variable Shadowing
+    category: shadowing
+    severity: HIGH
+    confidence: HIGH
+    description: "Child contract declares a state variable with the same name as a parent contract's state variable. This creates a separate storage slot, causing confusion and potential security issues."
+    conditions:
+      - child_contract_inherits
+      - variable_name_matches_parent
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_shadowing_variables
+    remediation:
+      - "Rename child variable"
+    cwe: ["CWE-710"]
+    swc: ["SWC-119"]
+    references: []
+
+  - id: SHADOW-002
+    name: Builtin Symbol Shadowing
+    category: shadowing
+    severity: LOW
+    confidence: HIGH
+    description: "Variable or function shadows a Solidity builtin (msg, block, tx, abi, etc.)."
+    conditions: []
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_shadowing_variables
+    remediation:
+      - "Rename variable"
+    cwe: ["CWE-710"]
+    swc: ["SWC-119"]
+    references: []
+
+  - id: SHADOW-003
+    name: Reserved Keyword Shadowing
+    category: shadowing
+    severity: LOW
+    confidence: HIGH
+    description: "Identifier uses a name that is a reserved keyword in Solidity. This may cause compilation errors in future compiler versions."
+    conditions: []
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_shadowing_variables
+    remediation:
+      - "Rename variable"
+    cwe: ["CWE-710"]
+    swc: []
+    references: []

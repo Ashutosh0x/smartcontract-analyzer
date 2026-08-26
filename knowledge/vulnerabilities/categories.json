@@ -1,0 +1,34 @@
+{
+  "categories": {
+    "reentrancy": {
+      "name": "Reentrancy",
+      "description": "An external call interrupts the current execution and calls back into the original function before state changes are committed.",
+      "severity": "high"
+    },
+    "access_control": {
+      "name": "Access Control",
+      "description": "Failure to properly restrict access to privileged functions.",
+      "severity": "high"
+    },
+    "oracle_manipulation": {
+      "name": "Oracle Manipulation",
+      "description": "Manipulating price or data feeds (often via flash loans) to trick a contract into making favorable calculations.",
+      "severity": "high"
+    },
+    "arithmetic": {
+      "name": "Arithmetic",
+      "description": "Integer overflow/underflow or precision loss issues.",
+      "severity": "medium"
+    },
+    "dos": {
+      "name": "Denial of Service",
+      "description": "An attack that prevents users from interacting with the contract.",
+      "severity": "medium"
+    },
+    "front_running": {
+      "name": "Front-running",
+      "description": "Exploiting transaction ordering in the mempool.",
+      "severity": "high"
+    }
+  }
+}

@@ -1,0 +1,100 @@
+rules:
+  - id: GOV-001
+    name: Flash Loan Governance Attack
+    category: governance
+    severity: HIGH
+    confidence: HIGH
+    description: "Governance voting relies on spot token balances, vulnerable to flash loans."
+    conditions:
+      - spot_voting
+    signals:
+      - "balanceOf(voter)"
+    anti_patterns:
+      - "getPriorVotes(voter, block.number - 1)"
+    evidence:
+      - show_voting_logic
+    remediation:
+      - "Use checkpointing and historical balances for voting power"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: GOV-002
+    name: Timelock Bypass
+    category: governance
+    severity: HIGH
+    confidence: HIGH
+    description: "Admin functions can be called directly, bypassing the timelock."
+    conditions:
+      - timelock_exists
+    signals:
+      - "onlyOwner"
+    anti_patterns:
+      - "onlyTimelock"
+    evidence:
+      - show_access_control
+    remediation:
+      - "Ensure all governance functions require msg.sender == timelock"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: GOV-003
+    name: Proposal Griefing
+    category: governance
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Proposals can be cancelled or overwritten by malicious actors."
+    conditions:
+      - unprotected_cancel
+    signals:
+      - "cancelProposal("
+    anti_patterns:
+      - "require(msg.sender == proposer)"
+    evidence:
+      - show_cancel_logic
+    remediation:
+      - "Restrict cancellation to proposer or if proposer's balance drops below threshold"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: GOV-004
+    name: Quorum Manipulation
+    category: governance
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Quorum can be manipulated via flash loans or dynamic supply changes."
+    conditions:
+      - dynamic_quorum
+    signals:
+      - "quorum = totalSupply() / 10"
+    anti_patterns:
+      - "fixed quorum"
+    evidence:
+      - show_quorum_calc
+    remediation:
+      - "Use historical total supply or fixed quorum thresholds"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: GOV-005
+    name: Governance Token Centralization
+    category: governance
+    severity: MEDIUM
+    confidence: HIGH
+    description: "A single address holds enough tokens to unilaterally pass proposals."
+    conditions:
+      - token_concentration
+    signals:
+      - "balance > quorum"
+    anti_patterns:
+      - "distributed distribution"
+    evidence:
+      - show_concentration
+    remediation:
+      - "Ensure proper distribution and use quadratic voting if applicable"
+    cwe: ["CWE-284"]
+    swc: []
+    references: []

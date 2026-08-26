@@ -1,0 +1,165 @@
+rules:
+  - id: ORACLE-001
+    name: Manipulable Spot Price Oracle
+    category: oracle
+    severity: CRITICAL
+    confidence: HIGH
+    description: "Using AMM spot reserves (e.g., Uniswap V2 reserves) directly as a price oracle."
+    conditions:
+      - amm_reserves_used_for_pricing
+    signals:
+      - "getReserves()"
+      - "balanceOf(pair)"
+    anti_patterns:
+      - "TWAP"
+      - "Chainlink"
+    evidence:
+      - show_spot_price_usage
+    remediation:
+      - "Use a TWAP or decentralized oracle network like Chainlink"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []
+
+  - id: ORACLE-002
+    name: Stale Oracle Data (Missing Freshness Check)
+    category: oracle
+    severity: HIGH
+    confidence: HIGH
+    description: "Chainlink latestRoundData is used without checking updatedAt."
+    conditions:
+      - chainlink_latest_round_data
+      - missing_updated_at_check
+    signals:
+      - "latestRoundData()"
+    anti_patterns:
+      - "require(block.timestamp - updatedAt < MAX_DELAY)"
+    evidence:
+      - show_missing_freshness_check
+    remediation:
+      - "Check that block.timestamp - updatedAt is within acceptable bounds"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []
+
+  - id: ORACLE-003
+    name: Oracle Decimal Mismatch
+    category: oracle
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Assuming all Chainlink feeds have 8 decimals or failing to scale properly."
+    conditions:
+      - hardcoded_decimals_scaling
+    signals:
+      - "1e8"
+      - "10**8"
+    anti_patterns:
+      - "feed.decimals()"
+    evidence:
+      - show_hardcoded_scaling
+    remediation:
+      - "Fetch decimals() from the oracle dynamically or configure per asset"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: ORACLE-004
+    name: Zero/Negative Price Accepted
+    category: oracle
+    severity: HIGH
+    confidence: HIGH
+    description: "Price feed can return 0 or negative values without reverting."
+    conditions:
+      - missing_price_greater_than_zero
+    signals:
+      - "latestRoundData()"
+    anti_patterns:
+      - "require(price > 0)"
+    evidence:
+      - show_missing_zero_check
+    remediation:
+      - "Require that the returned answer is > 0"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []
+
+  - id: ORACLE-005
+    name: Missing Chainlink Sequencer Uptime Check
+    category: oracle
+    severity: MEDIUM
+    confidence: HIGH
+    description: "L2 feeds must check sequencer uptime to prevent stale prices during outages."
+    conditions:
+      - is_l2_contract
+      - missing_sequencer_check
+    signals:
+      - "latestRoundData()"
+    anti_patterns:
+      - "sequencerUptimeFeed.latestRoundData()"
+    evidence:
+      - show_missing_sequencer_feed
+    remediation:
+      - "Query the Sequencer Uptime Feed before reading the price"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []
+
+  - id: ORACLE-006
+    name: TWAP Manipulation Window
+    category: oracle
+    severity: HIGH
+    confidence: MEDIUM
+    description: "TWAP window is too short, allowing manipulation."
+    conditions:
+      - twap_window_too_short
+    signals:
+      - "consult("
+    anti_patterns:
+      - "require(window >= 30 minutes)"
+    evidence:
+      - show_twap_window
+    remediation:
+      - "Use a sufficiently long TWAP window (e.g., 30+ minutes)"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []
+
+  - id: ORACLE-007
+    name: Hardcoded Oracle Address
+    category: oracle
+    severity: LOW
+    confidence: HIGH
+    description: "Oracle addresses are hardcoded, preventing updates if feeds are deprecated."
+    conditions:
+      - hardcoded_address
+    signals:
+      - "0x"
+    anti_patterns:
+      - "setOracle("
+    evidence:
+      - show_hardcoded_oracle
+    remediation:
+      - "Allow governance to update oracle addresses"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: ORACLE-008
+    name: Missing Oracle Fallback
+    category: oracle
+    severity: LOW
+    confidence: LOW
+    description: "No fallback mechanism if the primary oracle fails or returns stale data."
+    conditions:
+      - single_oracle_source
+    signals:
+      - "latestRoundData()"
+    anti_patterns:
+      - "fallbackOracle.getPrice()"
+    evidence:
+      - show_single_point_of_failure
+    remediation:
+      - "Implement a fallback oracle (e.g., Chainlink + Uniswap TWAP)"
+    cwe: ["CWE-345"]
+    swc: []
+    references: []

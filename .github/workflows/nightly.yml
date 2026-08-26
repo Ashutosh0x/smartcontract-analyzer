@@ -1,0 +1,63 @@
+name: Nightly Checks
+
+on:
+  schedule:
+    - cron: '0 1 * * *' # Nightly at 1 AM
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Security Tools
+        run: |
+          cargo install cargo-audit
+          cargo install cargo-deny
+
+      - name: Full Build (All Platforms simulated)
+        run: cargo build --all-targets --all-features
+
+      - name: Run All Tests
+        run: cargo test --all-targets --all-features
+
+      - name: Run Integration & Detector Tests
+        run: cargo test --test '*'
+
+      - name: Historical Exploit Benchmark
+        run: cargo bench --bench historical_exploits
+
+      - name: Performance Benchmark
+        run: cargo bench
+
+      - name: Security Audit
+        run: cargo audit && cargo deny check
+
+      - name: Generate Nightly Security Report
+        run: |
+          echo "# Nightly Security Report" > nightly-report.md
+          echo "All checks passed successfully." >> nightly-report.md
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-security-report
+          path: nightly-report.md
+
+      - name: Create Issue on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Nightly build failed`,
+              body: "The nightly checks workflow failed. Please investigate.",
+              labels: ["nightly-failure", "bug"]
+            })

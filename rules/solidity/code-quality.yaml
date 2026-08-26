@@ -1,0 +1,152 @@
+rules:
+  - id: QUALITY-001
+    name: Directional Override Character
+    category: code-quality
+    severity: HIGH
+    confidence: HIGH
+    description: "Source code contains Unicode right-to-left override characters (U+202E, U+202D, U+200F, U+200E). These can visually disguise malicious code."
+    conditions: []
+    signals:
+      - "\u202e"
+      - "\u202d"
+      - "\u200f"
+      - "\u200e"
+    anti_patterns: []
+    evidence:
+      - show_unicode_override
+    remediation:
+      - "Remove directional override characters"
+    cwe: ["CWE-451"]
+    swc: ["SWC-130"]
+    references: []
+
+  - id: QUALITY-002
+    name: Unbounded Pragma
+    category: code-quality
+    severity: LOW
+    confidence: HIGH
+    description: "Pragma directive uses a floating version (^, >=, >). Lock to a specific compiler version for deterministic builds and to avoid compiler bug regressions."
+    conditions: []
+    signals:
+      - "pragma solidity ^"
+      - "pragma solidity >="
+      - "pragma solidity >"
+    anti_patterns:
+      - "pragma solidity 0."
+    evidence:
+      - show_pragma
+    remediation:
+      - "Lock pragma version"
+    cwe: []
+    swc: ["SWC-103"]
+    references: []
+
+  - id: QUALITY-003
+    name: Default Visibility
+    category: code-quality
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Function does not have an explicit visibility modifier. In Solidity <0.5.0, this defaults to public, potentially exposing internal logic."
+    conditions:
+      - function_without_visibility
+      - solidity_version_lt_0_5
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_function
+    remediation:
+      - "Add visibility modifier"
+    cwe: []
+    swc: ["SWC-100"]
+    references: []
+
+  - id: QUALITY-004
+    name: Same Named Contracts
+    category: code-quality
+    severity: LOW
+    confidence: HIGH
+    description: "Multiple contracts with the same name exist in the project. This can cause confusion during deployment and verification."
+    conditions: []
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_contracts
+    remediation:
+      - "Ensure unique contract names"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUALITY-005
+    name: Missing Events Assertion
+    category: code-quality
+    severity: LOW
+    confidence: MEDIUM
+    description: "State-changing function does not emit an event. Events are essential for off-chain monitoring and indexing."
+    conditions:
+      - state_variable_modified
+      - no_event_emitted
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_function
+    remediation:
+      - "Emit events for state changes"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUALITY-006
+    name: Unused Return Value
+    category: code-quality
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Return value of a function call is not used or checked. This may indicate a missing error check or logic bug."
+    conditions:
+      - function_returns_value
+      - return_not_captured
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_unused_return
+    remediation:
+      - "Check or use the return value"
+    cwe: ["CWE-252"]
+    swc: ["SWC-104"]
+    references: []
+
+  - id: QUALITY-007
+    name: Unenforced State Maintenance Keywords
+    category: code-quality
+    severity: LOW
+    confidence: MEDIUM
+    description: "Function marked as view or pure modifies state or reads state respectively, but the Solidity compiler does not enforce these in all contexts."
+    conditions: []
+    signals: []
+    anti_patterns: []
+    evidence:
+      - show_function
+    remediation:
+      - "Correct state mutability keywords"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: QUALITY-008
+    name: Unary Plus Expression
+    category: code-quality
+    severity: LOW
+    confidence: HIGH
+    description: "Unary plus (+x) is a no-op in Solidity. This is likely a typo — the developer probably meant += or just x."
+    conditions: []
+    signals:
+      - "+x"
+      - "+ x"
+    anti_patterns: []
+    evidence:
+      - show_unary_plus
+    remediation:
+      - "Fix the typo"
+    cwe: []
+    swc: []
+    references: []

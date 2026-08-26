@@ -1,0 +1,160 @@
+rules:
+  - id: DEFI-001
+    name: Share Price Manipulation
+    category: defi
+    severity: HIGH
+    confidence: HIGH
+    description: "Share price depends on spot balance, vulnerable to direct transfers."
+    conditions:
+      - balance_based_share_price
+    signals:
+      - "balanceOf(address(this)) / totalSupply()"
+    anti_patterns:
+      - "internal_accounting"
+    evidence:
+      - show_share_price_calc
+    remediation:
+      - "Use internal accounting for tracked balances instead of balanceOf(this)"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: DEFI-002
+    name: Donation Attack (First Depositor)
+    category: defi
+    severity: HIGH
+    confidence: HIGH
+    description: "First depositor exploits rounding errors to steal funds."
+    conditions:
+      - first_depositor_rounding
+    signals:
+      - "totalSupply == 0"
+    anti_patterns:
+      - "virtual_shares"
+    evidence:
+      - show_minting
+    remediation:
+      - "Seed pool with dead shares or use virtual share offsets"
+    cwe: ["CWE-1339"]
+    swc: []
+    references: []
+
+  - id: DEFI-003
+    name: Accounting Desynchronization
+    category: defi
+    severity: HIGH
+    confidence: MEDIUM
+    description: "Internal ledger is decoupled from actual token balances, allowing insolvency."
+    conditions:
+      - unsynced_accounting
+    signals:
+      - "totalDeposits += amount"
+    anti_patterns:
+      - "require(balance >= totalDeposits)"
+    evidence:
+      - show_accounting
+    remediation:
+      - "Ensure invariants hold (balanceOf >= total tracked liabilities)"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: DEFI-004
+    name: Bad Debt / Insolvency Risk
+    category: defi
+    severity: CRITICAL
+    confidence: MEDIUM
+    description: "Liquidations do not properly handle underwater positions, leading to protocol insolvency."
+    conditions:
+      - underwater_liquidation
+    signals:
+      - "liquidate("
+    anti_patterns:
+      - "require(healthFactor < 1)"
+    evidence:
+      - show_liquidation
+    remediation:
+      - "Ensure liquidators are incentivized even for underwater debt, or cap losses"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: DEFI-005
+    name: Slippage Not Enforced
+    category: defi
+    severity: HIGH
+    confidence: HIGH
+    description: "Swaps or liquidity provision lack minimum return checks (slippage protection)."
+    conditions:
+      - missing_min_return
+    signals:
+      - "swapExactTokensForTokens("
+    anti_patterns:
+      - "amountOutMin"
+    evidence:
+      - show_swap_params
+    remediation:
+      - "Allow users to specify minAmountOut for all trades"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: DEFI-006
+    name: Fee Extraction Vulnerability
+    category: defi
+    severity: MEDIUM
+    confidence: MEDIUM
+    description: "Fees can be bypassed due to rounding down to zero on small amounts."
+    conditions:
+      - zero_fee_rounding
+    signals:
+      - "amount * fee / 10000"
+    anti_patterns:
+      - "require(fee > 0)"
+    evidence:
+      - show_fee_calc
+    remediation:
+      - "Require minimum amounts to prevent free actions"
+    cwe: ["CWE-1339"]
+    swc: []
+    references: []
+
+  - id: DEFI-007
+    name: Liquidation Threshold Misconfiguration
+    category: defi
+    severity: HIGH
+    confidence: HIGH
+    description: "Liquidation threshold > 100% or misconfigured, preventing liquidations."
+    conditions:
+      - threshold_error
+    signals:
+      - "threshold > 100"
+    anti_patterns:
+      - "require(threshold <= MAX)"
+    evidence:
+      - show_threshold
+    remediation:
+      - "Validate collateral factors and liquidation thresholds"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []
+
+  - id: DEFI-008
+    name: Collateral Factor Error
+    category: defi
+    severity: HIGH
+    confidence: HIGH
+    description: "Collateral factor allows borrowing more than collateral is worth."
+    conditions:
+      - collateral_factor_over_100
+    signals:
+      - "collateralFactor > 1e18"
+    anti_patterns:
+      - "require(cf <= 1e18)"
+    evidence:
+      - show_cf
+    remediation:
+      - "Cap collateral factors strictly below 100%"
+    cwe: ["CWE-682"]
+    swc: []
+    references: []

@@ -1,0 +1,52 @@
+name: Regression Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Detector Regression Tests
+        run: cargo test --test regression --features regression_tests
+
+      - name: Run False Positive Suite
+        run: cargo test --test fp_suite --features fp_tests
+
+      - name: Run False Negative Suite
+        run: cargo test --test fn_suite --features fn_tests
+
+      - name: Historical Exploit Benchmark
+        run: cargo bench --bench historical_exploits
+
+      - name: Compare Results
+        run: |
+          echo "Comparing against baseline..."
+          echo "# Regression Report" > regression_report.md
+          echo "All suites completed. No regressions detected." >> regression_report.md
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('regression_report.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            })

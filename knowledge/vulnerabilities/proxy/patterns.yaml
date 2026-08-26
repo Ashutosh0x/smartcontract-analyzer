@@ -1,0 +1,30 @@
+patterns:
+  - id: PROXY-001
+    name: "Uninitialized Implementation"
+    description: "Implementation contract is left uninitialized, allowing anyone to initialize and potentially selfdestruct it."
+    code_snippet: |
+      contract Implementation {
+          function initialize() external { ... }
+      }
+    detection_signals:
+      - "Missing _disableInitializers() in constructor of implementation contract."
+    remediation: "Call _disableInitializers() in the constructor."
+
+  - id: PROXY-002
+    name: "Storage Collision"
+    description: "Proxy and implementation use conflicting storage slots."
+    code_snippet: |
+      contract Proxy { address impl; }
+      contract Impl { address owner; }
+    detection_signals:
+      - "State variables defined in proxy instead of unstructured storage (EIP-1967)."
+    remediation: "Use EIP-1967 standard storage slots."
+
+  - id: PROXY-003
+    name: "UUPS Authorization Bypass"
+    description: "Missing access control on _authorizeUpgrade in UUPS proxies."
+    code_snippet: |
+      function _authorizeUpgrade(address newImplementation) internal override {}
+    detection_signals:
+      - "_authorizeUpgrade lacks onlyOwner or similar access control modifier."
+    remediation: "Always secure _authorizeUpgrade."

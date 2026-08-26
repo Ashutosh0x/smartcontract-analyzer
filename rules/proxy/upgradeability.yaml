@@ -1,0 +1,227 @@
+rules:
+  - id: PROXY-001
+    name: Unprotected UUPS Upgrade Function
+    category: proxy
+    severity: CRITICAL
+    confidence: HIGH
+    description: "UUPS _authorizeUpgrade function lacks access control."
+    conditions:
+      - uups_implementation
+      - missing_auth_on_authorizeUpgrade
+    signals:
+      - "_authorizeUpgrade("
+    anti_patterns:
+      - "onlyOwner"
+      - "onlyRole"
+    evidence:
+      - show_unprotected_upgrade
+    remediation:
+      - "Add onlyOwner modifier to _authorizeUpgrade"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: PROXY-002
+    name: Uninitialized Implementation Contract
+    category: proxy
+    severity: HIGH
+    confidence: HIGH
+    description: "Implementation contract lacks _disableInitializers() in constructor."
+    conditions:
+      - is_initializable
+      - missing_disable_initializers
+    signals:
+      - "constructor()"
+    anti_patterns:
+      - "_disableInitializers()"
+    evidence:
+      - show_constructor
+    remediation:
+      - "Call _disableInitializers() in the constructor"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: PROXY-003
+    name: Storage Layout Collision
+    category: proxy
+    severity: CRITICAL
+    confidence: HIGH
+    description: "New implementation alters storage layout of existing variables."
+    conditions:
+      - storage_layout_changed
+    signals:
+      - "uint256 newVar"
+    anti_patterns:
+      - "Storage gaps"
+    evidence:
+      - show_storage_diff
+    remediation:
+      - "Only append new storage variables or use Diamond Storage"
+    cwe: ["CWE-843"]
+    swc: []
+    references: []
+
+  - id: PROXY-004
+    name: Function Selector Clash
+    category: proxy
+    severity: HIGH
+    confidence: HIGH
+    description: "Proxy and implementation share a function selector (Transparent Proxy issue)."
+    conditions:
+      - selector_clash
+    signals:
+      - "fallback()"
+    anti_patterns:
+      - "TransparentUpgradeableProxy"
+    evidence:
+      - show_clashing_selectors
+    remediation:
+      - "Ensure proxy and implementation do not have clashing selectors"
+    cwe: ["CWE-696"]
+    swc: []
+    references: []
+
+  - id: PROXY-005
+    name: Missing Upgrade Authorization
+    category: proxy
+    severity: HIGH
+    confidence: HIGH
+    description: "Upgrade function can be called by non-admin."
+    conditions:
+      - upgradeTo_unprotected
+    signals:
+      - "upgradeTo("
+    anti_patterns:
+      - "onlyOwner"
+    evidence:
+      - show_upgrade_logic
+    remediation:
+      - "Restrict upgradeTo to admin only"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: PROXY-006
+    name: Implementation Self-Destruct Risk
+    category: proxy
+    severity: CRITICAL
+    confidence: HIGH
+    description: "Implementation contract has delegatecall or selfdestruct allowing destruction."
+    conditions:
+      - implementation_has_delegatecall
+    signals:
+      - "delegatecall"
+      - "selfdestruct"
+    anti_patterns:
+      - "address(this) == implementation"
+    evidence:
+      - show_destructive_operations
+    remediation:
+      - "Remove selfdestruct and unprotected delegatecalls from implementation"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: PROXY-007
+    name: Reinitializer Version Skip
+    category: proxy
+    severity: MEDIUM
+    confidence: MEDIUM
+    description: "Reinitializer version may skip important migration logic."
+    conditions:
+      - reinitializer_used
+    signals:
+      - "reinitializer("
+    anti_patterns:
+      - "sequential updates"
+    evidence:
+      - show_reinitializer
+    remediation:
+      - "Ensure versioning logic handles missing state migrations"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: PROXY-008
+    name: Beacon Proxy Unauthorized Upgrade
+    category: proxy
+    severity: HIGH
+    confidence: HIGH
+    description: "UpgradeableBeacon can be updated by unauthorized users."
+    conditions:
+      - beacon_unprotected
+    signals:
+      - "upgradeTo("
+    anti_patterns:
+      - "onlyOwner"
+    evidence:
+      - show_beacon_upgrade
+    remediation:
+      - "Restrict beacon upgrades to owner"
+    cwe: ["CWE-285"]
+    swc: []
+    references: []
+
+  - id: PROXY-009
+    name: Diamond Proxy Selector Collision
+    category: proxy
+    severity: HIGH
+    confidence: HIGH
+    description: "Multiple facets in Diamond proxy share function selectors."
+    conditions:
+      - facet_selector_collision
+    signals:
+      - "diamondCut"
+    anti_patterns:
+      - "require(selectors[i] == 0)"
+    evidence:
+      - show_diamond_collision
+    remediation:
+      - "Ensure selectors are unique across all facets"
+    cwe: ["CWE-696"]
+    swc: []
+    references: []
+
+  - id: PROXY-010
+    name: Missing ERC1967 Upgrade Events
+    category: proxy
+    severity: LOW
+    confidence: HIGH
+    description: "Custom proxy lacks standard ERC1967 Upgraded events."
+    conditions:
+      - custom_proxy_no_events
+    signals:
+      - "sstore(SLOT,"
+    anti_patterns:
+      - "emit Upgraded("
+    evidence:
+      - show_missing_event
+    remediation:
+      - "Emit Upgraded event on implementation change for off-chain tracking"
+    cwe: []
+    swc: []
+    references: []
+
+  - id: PROXY-011
+    name: Missing Gap Variable
+    category: proxy
+    severity: MEDIUM
+    confidence: HIGH
+    description: "Upgradeable base contract does not include a storage gap (__gap). Without a gap, adding new state variables in a future version will cause storage collisions with child contracts."
+    conditions:
+      - contract_is_upgradeable_base
+      - no_gap_variable
+    signals:
+      - "is Initializable"
+      - "is UUPSUpgradeable"
+    anti_patterns:
+      - "uint256[50] private __gap"
+      - "uint256[49] private __gap"
+    evidence:
+      - show_contract_definition
+    remediation:
+      - "Add a __gap variable at the end of the contract storage"
+    cwe: []
+    swc: []
+    references: []

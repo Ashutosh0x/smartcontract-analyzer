@@ -1,0 +1,15 @@
+{
+  "opcodes": {
+    "0x00": { "name": "STOP", "gas": 0, "security_sensitive": false },
+    "0x5f": { "name": "PUSH0", "gas": 2, "security_sensitive": false },
+    "0xf1": { "name": "CALL", "gas": 0, "security_sensitive": true, "notes": "External call" },
+    "0xf4": { "name": "DELEGATECALL", "gas": 0, "security_sensitive": true, "notes": "Context-preserving call" },
+    "0xfa": { "name": "STATICCALL", "gas": 0, "security_sensitive": true, "notes": "Read-only external call" },
+    "0xfd": { "name": "REVERT", "gas": 0, "security_sensitive": false },
+    "0xff": { "name": "SELFDESTRUCT", "gas": 5000, "security_sensitive": true, "notes": "Contract destruction" },
+    "0xf5": { "name": "CREATE2", "gas": 32000, "security_sensitive": true, "notes": "Deterministic deployment" },
+    "0x5c": { "name": "TLOAD", "gas": 100, "security_sensitive": false, "notes": "EIP-1153" },
+    "0x5d": { "name": "TSTORE", "gas": 100, "security_sensitive": true, "notes": "EIP-1153" },
+    "0x5e": { "name": "MCOPY", "gas": 3, "security_sensitive": false, "notes": "Memory copy" }
+  }
+}

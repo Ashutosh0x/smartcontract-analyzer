@@ -1,0 +1,24 @@
+rules:
+  - id: RAND-001
+    name: Block Randomness
+    category: randomness
+    severity: HIGH
+    confidence: HIGH
+    description: "Using block.timestamp, blockhash, block.difficulty, or block.prevrandao as a source of randomness. Miners/validators can influence these values."
+    conditions: []
+    signals:
+      - "block.timestamp"
+      - "blockhash("
+      - "block.difficulty"
+      - "block.prevrandao"
+    anti_patterns:
+      - "chainlink"
+      - "VRF"
+      - "randomness"
+    evidence:
+      - show_block_randomness_usage
+    remediation:
+      - "Use an oracle for secure randomness (e.g., Chainlink VRF)"
+    cwe: ["CWE-330"]
+    swc: ["SWC-120"]
+    references: []

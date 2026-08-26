@@ -1,0 +1,35 @@
+[project]
+name = "example"
+src = ["src/"]
+exclude = ["test/", "script/"]
+
+[compiler]
+solc_version = "auto"
+via_ir = false
+optimizer = true
+optimizer_runs = 200
+remappings = []
+
+[analysis]
+mode = "fast"  # fast | deep | max
+threads = 0  # 0 = auto
+timeout = 300
+
+[detectors]
+enable_all = true
+disable = []
+severity_threshold = "low"
+
+[reporting]
+format = "terminal"  # terminal | json | sarif | markdown | html
+output = "sentinel-report"
+verbosity = "normal"
+show_evidence = true
+show_remediation = true
+
+[baseline]
+path = ".sentinel-baseline.json"
+
+[ci]
+fail_on = "high"  # severity threshold to fail CI
+new_findings_only = false

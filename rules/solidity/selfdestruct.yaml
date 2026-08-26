@@ -1,0 +1,24 @@
+rules:
+  - id: DESTRUCT-001
+    name: Unsafe Self-Destruct
+    category: selfdestruct
+    severity: CRITICAL
+    confidence: HIGH
+    description: "selfdestruct (deprecated in Solidity >=0.8.24) is callable without sufficient access control. An attacker can destroy the contract and drain all ETH."
+    conditions:
+      - selfdestruct_present
+      - insufficient_access_control
+    signals:
+      - "selfdestruct("
+      - "suicide("
+    anti_patterns:
+      - "onlyOwner"
+      - "require(msg.sender"
+      - "require(owner"
+    evidence:
+      - show_selfdestruct
+    remediation:
+      - "Add robust access control or remove selfdestruct"
+    cwe: ["CWE-284"]
+    swc: ["SWC-106"]
+    references: []
