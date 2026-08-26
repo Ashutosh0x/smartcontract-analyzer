@@ -278,13 +278,41 @@ disabled = ["PRAGMA-01"]
 
 ---
 
+## Limitations
+
+Sentinel is a parse-tree-level static analyzer. It does not have type resolution,
+IR/SSA, CFG, or cross-contract analysis. See
+[KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for the full, honest gap list
+including OWASP SC Top 10 coverage mapping.
+
+---
+
+## Acknowledgments
+
+Sentinel's architecture is directly inspired by:
+
+- **[Aderyn](https://github.com/Cyfrin/aderyn)** (Cyfrin, GPL-3.0) --
+  WorkspaceContext pattern, Detector trait design, Foundry/Hardhat auto-detection.
+  Aderyn is the closest comparable Rust-based Solidity analyzer.
+- **[Slither](https://github.com/crytic/slither)** (Trail of Bits, AGPL-3.0) --
+  detector taxonomy, severity classification, SARIF output format. Slither's
+  SlithIR and taint analysis set the standard we're working toward.
+- **[SWC Registry](https://swcregistry.io/)** -- vulnerability classification
+  identifiers.
+- **[OWASP Smart Contract Top 10](https://owasp.org/www-project-smart-contract-top-10/)** --
+  risk categorization framework.
+
+No code was copied from any of these projects.
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT -- see [LICENSE](LICENSE).
 
 ---
 
