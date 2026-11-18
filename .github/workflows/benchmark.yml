@@ -25,7 +25,7 @@ jobs:
         run: cargo bench --bench precision_recall
 
       - name: Upload Benchmark Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-results
           path: target/criterion/
