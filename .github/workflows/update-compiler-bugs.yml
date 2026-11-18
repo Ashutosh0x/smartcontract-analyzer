@@ -32,7 +32,7 @@ jobs:
 
       - name: Verify Knowledge Crate
         if: steps.compare.outputs.changed == 'true'
-        run: cargo test -p sentinel-knowledge
+        run: cargo test --lib
 
       - name: Create Pull Request
         if: steps.compare.outputs.changed == 'true'

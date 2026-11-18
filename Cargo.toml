@@ -46,8 +46,6 @@ globset = "0.4"
 
 # Colored terminal output
 colored = "2"
-comfy-table = "7"
-indicatif = "0.17"
 
 # Regex for pattern matching
 regex = "1"
@@ -60,9 +58,6 @@ petgraph = "0.6"
 
 # UUID
 uuid = { version = "1", features = ["v4"] }
-
-# Time
-chrono = { version = "0.4", features = ["serde"] }
 
 # Rayon for parallelism
 rayon = "1"

@@ -1,0 +1,35 @@
+# cargo-deny configuration for Sentinel.
+# advisories v2 defaults: vulnerable crates fail the build; unmaintained/yanked warn.
+[advisories]
+version = 2
+
+# Permissive licenses only. Extend the allow list when a new dependency
+# brings in an additional license, or reject it via the `deny` list.
+[licenses]
+version = 2
+confidence-threshold = 0.8
+allow = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "ISC",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Unlicense",
+    "CC0-1.0",
+    "Zlib",
+    "BSL-1.0",
+    "MPL-2.0",
+    "OpenSSL",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "CDLA-Permissive-2.0",
+]
+
+[bans]
+multiple-versions = "warn"
+
+[sources]
+unknown-registry = "warn"
+unknown-git = "warn"

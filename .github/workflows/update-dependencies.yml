@@ -16,9 +16,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-audit & cargo-deny
-        run: |
-          cargo install cargo-audit
-          cargo install cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit,cargo-deny
 
       - name: Cargo Update
         run: cargo update

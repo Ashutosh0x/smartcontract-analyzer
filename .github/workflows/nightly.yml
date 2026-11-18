@@ -5,6 +5,10 @@ on:
     - cron: '0 1 * * *' # Nightly at 1 AM
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   nightly:
     runs-on: ubuntu-latest
@@ -16,9 +20,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install Security Tools
-        run: |
-          cargo install cargo-audit
-          cargo install cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit,cargo-deny
 
       - name: Full Build (All Platforms simulated)
         run: cargo build --all-targets --all-features
