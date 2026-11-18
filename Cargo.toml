@@ -46,6 +46,7 @@ globset = "0.4"
 
 # Colored terminal output
 colored = "2"
+comfy-table = "7"
 
 # Regex for pattern matching
 regex = "1"
